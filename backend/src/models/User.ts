@@ -12,6 +12,9 @@ export interface IUser extends Document {
   avatar?: string;
 
   role: UserRole;
+  websiteId?: string;
+  websiteSlug?: string;
+  templateSlug?: string;
 
   isEmailVerified: boolean;
   isActive: boolean;
@@ -39,7 +42,6 @@ const UserSchema = new Schema<IUser>(
     email: {
       type: String,
       required: true,
-      unique: true,
       lowercase: true,
       trim: true,
       validate: [
@@ -72,6 +74,24 @@ const UserSchema = new Schema<IUser>(
       default: "user",
     },
 
+    websiteId: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    websiteSlug: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    templateSlug: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
     isEmailVerified: {
       type: Boolean,
       default: false,
@@ -100,6 +120,15 @@ const UserSchema = new Schema<IUser>(
   },
   {
     timestamps: true,
+  }
+);
+
+UserSchema.index(
+  { email: 1, websiteId: 1 },
+  {
+    unique: true,
+    sparse: true,
+    name: "user_email_website_unique",
   }
 );
 

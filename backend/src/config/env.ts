@@ -92,6 +92,19 @@ export const env = {
       process.env.PUBLISH_ROOT,
   },
 
+  customDomainTarget:
+    process.env.CUSTOM_DOMAIN_TARGET ||
+    (() => {
+      const raw =
+        process.env.BACKEND_URL ||
+        "http://localhost:5000";
+      try {
+        return new URL(raw).host;
+      } catch {
+        return raw.replace(/^https?:\/\//, "").replace(/\/$/, "");
+      }
+    })(),
+
   admin: {
     email:
       process.env.ADMIN_EMAIL,

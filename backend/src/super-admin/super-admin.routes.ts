@@ -19,4 +19,9 @@ router.get(
   Controller.profile
 );
 
+router.get(
+  "/websites",
+  Controller.getAllWebsites
+);
+
 export default router;

@@ -8,7 +8,7 @@ export const getTemplates = async (
   res: Response
 ) => {
   try {
-    const templates = await Template.find({ isActive: true }).sort({
+    const templates = await Template.find({}).sort({
       createdAt: -1,
     });
 
@@ -48,7 +48,29 @@ export const createTemplate = async (
   res: Response
 ) => {
   try {
-    const template = await Template.create(req.body);
+    const payload = { ...req.body };
+
+    if (!payload.name) {
+      return errorResponse(res, "Template name is required.", 400);
+    }
+
+    const baseSlug = (payload.slug || payload.name)
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "") || "template";
+
+    let slug = baseSlug;
+    let suffix = 1;
+
+    while (await Template.exists({ slug })) {
+      slug = `${baseSlug}-${suffix}`;
+      suffix += 1;
+    }
+
+    payload.slug = slug;
+
+    const template = await Template.create(payload);
 
     return successResponse(
       res,

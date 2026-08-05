@@ -43,3 +43,23 @@ export const profile = async (
     },
   });
 };
+
+export const getAllWebsites = async (
+  _req: Request,
+  res: Response
+) => {
+  try {
+    const data =
+      await SuperAdminService.getAllWebsites();
+
+    return res.json({
+      success: true,
+      data,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

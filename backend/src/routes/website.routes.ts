@@ -8,7 +8,7 @@ import {
   updateWebsite,
   getWebsiteDashboard,
   updateWebsiteSettings,
-} from "../controllers/website.controller";
+} from "../platform/website/website.controller";
 
 const router = Router();
 

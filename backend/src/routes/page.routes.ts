@@ -6,7 +6,7 @@ import {
   deleteSection,
   reorderSections,
   getPage,
-} from "../controllers/page.controller";
+} from "../platform/pages/page.controller";
 
 const router = Router();
 

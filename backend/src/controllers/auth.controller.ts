@@ -68,6 +68,7 @@ export const signup = async (
           email: user.email,
           phone: user.phone,
           role: user.role,
+          plan: user.subscription?.plan || "free",
         },
       },
       201
@@ -127,6 +128,14 @@ export const login = async (
       );
     }
 
+    if (!user.isActive) {
+      return errorResponse(
+        res,
+        "Your account has been suspended. Please contact support.",
+        403
+      );
+    }
+
     const token =
       generateAccessToken({
         userId: user._id.toString(),
@@ -145,6 +154,7 @@ export const login = async (
           email: user.email,
           phone: user.phone,
           role: user.role,
+          plan: user.subscription?.plan || "free",
         },
       }
     );
@@ -178,6 +188,7 @@ export const me = async (
         role: user.role,
         avatar: user.avatar,
         subscription: user.subscription,
+        plan: user.subscription?.plan || "free",
         isEmailVerified:
           user.isEmailVerified,
       }

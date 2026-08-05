@@ -5,6 +5,8 @@ export interface IDomain extends Document {
 
   domain: string;
 
+  hostname: string;
+
   type: "subdomain" | "custom";
 
   cnameHost: string;
@@ -33,6 +35,13 @@ const DomainSchema = new Schema(
     domain: {
       type: String,
       required: true,
+      trim: true,
+      lowercase: true,
+    },
+
+    hostname: {
+      type: String,
+      required: true,
       unique: true,
       trim: true,
       lowercase: true,
@@ -51,7 +60,9 @@ const DomainSchema = new Schema(
 
     cnameTarget: {
       type: String,
-      default: "builder.buildhub.app",
+      default:
+        process.env.CUSTOM_DOMAIN_TARGET ||
+        "builder.buildhub.app",
     },
 
     verificationStatus: {

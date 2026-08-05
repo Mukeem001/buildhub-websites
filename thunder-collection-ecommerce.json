@@ -1,0 +1,312 @@
+{
+  "clientName": "Thunder Client",
+  "collectionName": "Ecommerce APIs",
+  "requests": [
+    {
+      "name": "Auth - Admin Login",
+      "method": "POST",
+      "url": "http://localhost:5000/api/modules/ecommerce/auth/admin/demo/demo/login",
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin12345\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ]
+    },
+    {
+      "name": "Auth - User Login",
+      "method": "POST",
+      "url": "http://localhost:5000/api/modules/ecommerce/auth/user/demo/demo/login",
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"user12345\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ]
+    },
+    {
+      "name": "Auth - User Signup",
+      "method": "POST",
+      "url": "http://localhost:5000/api/modules/ecommerce/auth/user/demo/demo/signup",
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"fullName\": \"Demo User\",\n  \"email\": \"user@example.com\",\n  \"password\": \"user12345\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ]
+    },
+    {
+      "name": "Admin - Dashboard Overview",
+      "method": "GET",
+      "url": "http://localhost:5000/api/modules/ecommerce/admin/demo/demo/dashboard",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{adminToken}}" }
+      ]
+    },
+    {
+      "name": "Admin - Products List",
+      "method": "GET",
+      "url": "http://localhost:5000/api/modules/ecommerce/admin/demo/demo/products",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{adminToken}}" }
+      ]
+    },
+    {
+      "name": "Admin - Create Product",
+      "method": "POST",
+      "url": "http://localhost:5000/api/modules/ecommerce/admin/demo/demo/products",
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"name\": \"Demo Product\",\n  \"slug\": \"demo-product\",\n  \"price\": 199,\n  \"category\": \"electronics\",\n  \"brand\": \"demo\",\n  \"stock\": 10,\n  \"status\": \"active\",\n  \"description\": \"Demo product for admin testing\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{adminToken}}" }
+      ]
+    },
+    {
+      "name": "Admin - Update Product",
+      "method": "PUT",
+      "url": "http://localhost:5000/api/modules/ecommerce/admin/demo/demo/products/1",
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"name\": \"Updated Product\",\n  \"price\": 249,\n  \"stock\": 15,\n  \"status\": \"active\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{adminToken}}" }
+      ]
+    },
+    {
+      "name": "Admin - Categories",
+      "method": "GET",
+      "url": "http://localhost:5000/api/modules/ecommerce/admin/demo/demo/categories",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{adminToken}}" }
+      ]
+    },
+    {
+      "name": "Admin - Orders",
+      "method": "GET",
+      "url": "http://localhost:5000/api/modules/ecommerce/admin/demo/demo/orders",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{adminToken}}" }
+      ]
+    },
+    {
+      "name": "Admin - Create Order",
+      "method": "POST",
+      "url": "http://localhost:5000/api/modules/ecommerce/admin/demo/demo/orders/create",
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"customerName\": \"John Doe\",\n  \"items\": [{\"productId\": \"1\", \"quantity\": 1}],\n  \"shippingAddress\": {\"city\": \"Lahore\", \"country\": \"Pakistan\"}\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{adminToken}}" }
+      ]
+    },
+    {
+      "name": "Admin - Customers",
+      "method": "GET",
+      "url": "http://localhost:5000/api/modules/ecommerce/admin/demo/demo/customers",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{adminToken}}" }
+      ]
+    },
+    {
+      "name": "Admin - Coupons",
+      "method": "GET",
+      "url": "http://localhost:5000/api/modules/ecommerce/admin/demo/demo/coupons",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{adminToken}}" }
+      ]
+    },
+    {
+      "name": "Admin - Reviews",
+      "method": "GET",
+      "url": "http://localhost:5000/api/modules/ecommerce/admin/demo/demo/reviews",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{adminToken}}" }
+      ]
+    },
+    {
+      "name": "Admin - Shipping",
+      "method": "GET",
+      "url": "http://localhost:5000/api/modules/ecommerce/admin/demo/demo/shipping",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{adminToken}}" }
+      ]
+    },
+    {
+      "name": "Admin - Taxes",
+      "method": "GET",
+      "url": "http://localhost:5000/api/modules/ecommerce/admin/demo/demo/taxes",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{adminToken}}" }
+      ]
+    },
+    {
+      "name": "Admin - Payments",
+      "method": "GET",
+      "url": "http://localhost:5000/api/modules/ecommerce/admin/demo/demo/payments",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{adminToken}}" }
+      ]
+    },
+    {
+      "name": "Admin - Analytics Sales",
+      "method": "GET",
+      "url": "http://localhost:5000/api/modules/ecommerce/admin/demo/demo/analytics/sales",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{adminToken}}" }
+      ]
+    },
+    {
+      "name": "Admin - Notifications",
+      "method": "GET",
+      "url": "http://localhost:5000/api/modules/ecommerce/admin/demo/demo/notifications",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{adminToken}}" }
+      ]
+    },
+    {
+      "name": "Admin - Settings",
+      "method": "GET",
+      "url": "http://localhost:5000/api/modules/ecommerce/admin/demo/demo/settings",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{adminToken}}" }
+      ]
+    },
+    {
+      "name": "Admin - Delivery",
+      "method": "GET",
+      "url": "http://localhost:5000/api/modules/ecommerce/admin/demo/demo/delivery",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{adminToken}}" }
+      ]
+    },
+    {
+      "name": "Admin - Logs",
+      "method": "GET",
+      "url": "http://localhost:5000/api/modules/ecommerce/admin/demo/demo/logs",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{adminToken}}" }
+      ]
+    },
+    {
+      "name": "Admin - Create Coupon",
+      "method": "POST",
+      "url": "http://localhost:5000/api/modules/ecommerce/admin/demo/demo/coupons",
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"code\": \"SAVE10\",\n  \"discount\": 10,\n  \"type\": \"percentage\",\n  \"expiresAt\": \"2026-12-31\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{adminToken}}" }
+      ]
+    },
+    {
+      "name": "User - Profile",
+      "method": "GET",
+      "url": "http://localhost:5000/api/modules/ecommerce/user/demo/demo/profile",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{userToken}}" }
+      ]
+    },
+    {
+      "name": "User - Home",
+      "method": "GET",
+      "url": "http://localhost:5000/api/modules/ecommerce/user/demo/demo/home",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{userToken}}" }
+      ]
+    },
+    {
+      "name": "User - Products",
+      "method": "GET",
+      "url": "http://localhost:5000/api/modules/ecommerce/user/demo/demo/products",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{userToken}}" }
+      ]
+    },
+    {
+      "name": "User - Cart",
+      "method": "GET",
+      "url": "http://localhost:5000/api/modules/ecommerce/user/demo/demo/cart",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{userToken}}" }
+      ]
+    },
+    {
+      "name": "User - Orders",
+      "method": "GET",
+      "url": "http://localhost:5000/api/modules/ecommerce/user/demo/demo/orders",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{userToken}}" }
+      ]
+    },
+    {
+      "name": "User - Wishlist",
+      "method": "GET",
+      "url": "http://localhost:5000/api/modules/ecommerce/user/demo/demo/wishlist",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{userToken}}" }
+      ]
+    },
+    {
+      "name": "User - Reviews",
+      "method": "GET",
+      "url": "http://localhost:5000/api/modules/ecommerce/user/demo/demo/reviews/1",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{userToken}}" }
+      ]
+    },
+    {
+      "name": "User - Notifications",
+      "method": "GET",
+      "url": "http://localhost:5000/api/modules/ecommerce/user/demo/demo/notifications",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{userToken}}" }
+      ]
+    },
+    {
+      "name": "User - Support Tickets",
+      "method": "GET",
+      "url": "http://localhost:5000/api/modules/ecommerce/user/demo/demo/support/tickets",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{userToken}}" }
+      ]
+    },
+    {
+      "name": "User - Add to Cart",
+      "method": "POST",
+      "url": "http://localhost:5000/api/modules/ecommerce/user/demo/demo/cart",
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"productId\": \"1\",\n  \"quantity\": 1\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{userToken}}" }
+      ]
+    },
+    {
+      "name": "User - Add Wishlist",
+      "method": "POST",
+      "url": "http://localhost:5000/api/modules/ecommerce/user/demo/demo/wishlist",
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"productId\": \"1\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{userToken}}" }
+      ]
+    }
+  ]
+}

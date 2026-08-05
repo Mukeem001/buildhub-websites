@@ -10,19 +10,23 @@ import env from "./config/env";
 import authRoutes from "./routes/auth.routes";
 import userRoutes from "./routes/user.routes";
 import templateRoutes from "./routes/template.routes";
-import websiteRoutes from "./routes/website.routes";
-import publishRoutes from "./routes/publish.routes";
+import websiteRoutes from "./platform/website/website.routes";
+import publishRoutes from "./platform/publish/publish.routes";
 import pageRoutes from "./routes/page.routes";
 import websiteServerRoutes from "./website-server/website.routes";
 import superAdminRoutes from "./super-admin/super-admin.routes";
-import domainRoutes from "./domain/domain.routes";
+import domainRoutes from "./platform/domain/domain.routes";
 import Domain from "./domain/domain.model";
 import Website from "./models/Website";
+import ecommerceRoutes from "./modules/ecommerce/ecommerce.routes";
+import restaurantRoutes from "./modules/restaurant/restaurant.routes";
+import hospitalRoutes from "./modules/hospital/hospital.routes";
+import portfolioRoutes from "./modules/portfolio/portfolio.routes";
 
 
 const app = express();
 
-app.set("trust proxy", true);
+app.set("trust proxy", 1);
 
 /* ===========================
    Security
@@ -32,7 +36,29 @@ app.use(helmet());
 
 app.use(
   cors({
-    origin: env.allowedOrigins,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. server-to-server or same-origin)
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      // Allow configured origins
+      if (env.allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      // In development allow localhost or local network origins
+      const localOriginRegex = /^https?:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+|192\.168\.\d+\.\d+)(:\d+)?$/;
+
+      if (env.nodeEnv === "development" && localOriginRegex.test(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error("CORS origin denied"));
+    },
     credentials: true,
     optionsSuccessStatus: 200,
   })
@@ -60,11 +86,42 @@ app.use(
 
 app.use(morgan("dev"));
 
+app.use((req, res, next) => {
+  const startedAt = Date.now();
+  console.log(`[REQUEST] ${req.method} ${req.originalUrl}`);
+
+  if (req.body && typeof req.body === "object" && Object.keys(req.body).length > 0) {
+    const bodyPreview = JSON.stringify(req.body).slice(0, 800);
+    console.log(`[BODY] ${bodyPreview}`);
+  }
+
+  const originalEnd = res.end.bind(res);
+  res.end = ((chunk?: any, encoding?: any, cb?: any) => {
+    const duration = Date.now() - startedAt;
+    console.log(`[RESPONSE] ${req.method} ${req.originalUrl} -> ${res.statusCode} (${duration}ms)`);
+    return originalEnd(chunk, encoding, cb);
+  }) as typeof res.end;
+
+  next();
+});
 
 app.use(
   "/api/super-admin",
   superAdminRoutes
 );
+
+app.get("/api/super-admin/health", (_req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Super Admin health OK",
+    endpoints: {
+      login: "/api/super-admin/login",
+      dashboard: "/api/super-admin/dashboard",
+      profile: "/api/super-admin/profile",
+      websites: "/api/super-admin/websites",
+    },
+  });
+});
 
 /* ===========================
    Rate Limit
@@ -102,7 +159,51 @@ app.use("/api/websites", websiteRoutes);
 app.use("/api/publish", publishRoutes);
 app.use("/api/pages", pageRoutes);
 app.use("/sites", websiteServerRoutes);
-app.use("/api/domain", domainRoutes); 
+app.use("/api/domain", domainRoutes);
+app.use("/api/modules/ecommerce", ecommerceRoutes);
+app.use("/api/modules/restaurant", restaurantRoutes);
+app.use("/api/modules/hospital", hospitalRoutes);
+app.use("/api/modules/portfolio", portfolioRoutes);
+
+app.get("/api/modules/health", (_req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Module health overview",
+    superAdmin: {
+      health: "/api/super-admin/health",
+      login: "/api/super-admin/login",
+      dashboard: "/api/super-admin/dashboard",
+      profile: "/api/super-admin/profile",
+      websites: "/api/super-admin/websites",
+    },
+    modules: [
+      {
+        name: "ecommerce",
+        health: "/api/modules/ecommerce/health",
+        user: "/api/modules/ecommerce/user/:websiteId/:websiteSlug/products",
+        admin: "/api/modules/ecommerce/admin/:websiteId/:websiteSlug/products",
+      },
+      {
+        name: "restaurant",
+        health: "/api/modules/restaurant/health",
+        user: "/api/modules/restaurant/user/:websiteId/:websiteSlug/menu",
+        admin: "/api/modules/restaurant/admin/:websiteId/:websiteSlug/menu",
+      },
+      {
+        name: "hospital",
+        health: "/api/modules/hospital/health",
+        user: "/api/modules/hospital/user/:websiteId/:websiteSlug/doctors",
+        admin: "/api/modules/hospital/admin/:websiteId/:websiteSlug/doctors",
+      },
+      {
+        name: "portfolio",
+        health: "/api/modules/portfolio/health",
+        user: "/api/modules/portfolio/user/:websiteId/:websiteSlug/projects",
+        admin: "/api/modules/portfolio/admin/:websiteId/:websiteSlug/projects",
+      },
+    ],
+  });
+});
 
 /* ===========================
    Custom domain routing
@@ -126,7 +227,7 @@ app.use(async (req, res, next) => {
   }
 
   const domainRecord = await Domain.findOne({
-    domain: hostname,
+    hostname: hostname,
     verificationStatus: "verified",
   });
 

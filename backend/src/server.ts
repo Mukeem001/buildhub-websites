@@ -7,8 +7,8 @@ const startServer = async (): Promise<void> => {
     // Connect MongoDB
     await connectDatabase();
 
-    // Start Express Server
-    app.listen(env.port, () => {
+    // Start Express Server on all interfaces so local IPs can reach it
+    app.listen(env.port, "0.0.0.0", () => {
       console.log("\n=================================");
       console.log("🚀 BuildHub Backend Started");
       console.log("=================================");

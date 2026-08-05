@@ -5,8 +5,13 @@ export interface ITemplate extends Document {
   slug: string;
   description: string;
   category: string;
+  author?: string;
+  price?: number;
+  downloads?: number;
   thumbnail?: string;
   previewUrl?: string;
+  premium?: boolean;
+  rating?: number;
   isActive: boolean;
   tags: string[];
 }
@@ -32,6 +37,19 @@ const TemplateSchema = new Schema<ITemplate>(
       type: String,
       default: "general",
     },
+    author: {
+      type: String,
+      default: "BuildHub",
+      trim: true,
+    },
+    price: {
+      type: Number,
+      default: 0,
+    },
+    downloads: {
+      type: Number,
+      default: 0,
+    },
     thumbnail: {
       type: String,
       default: "",
@@ -39,6 +57,14 @@ const TemplateSchema = new Schema<ITemplate>(
     previewUrl: {
       type: String,
       default: "",
+    },
+    premium: {
+      type: Boolean,
+      default: false,
+    },
+    rating: {
+      type: Number,
+      default: 4.8,
     },
     isActive: {
       type: Boolean,
@@ -53,18 +79,6 @@ const TemplateSchema = new Schema<ITemplate>(
     timestamps: true,
   }
 );
-
-TemplateSchema.pre("validate", function (this: any, next: any) {
-  if (!this.slug) {
-    this.slug = this.name
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
-  }
-
-  next();
-});
 
 const Template = mongoose.model<ITemplate>("Template", TemplateSchema);
 

@@ -1,8 +1,8 @@
 import type { Project } from "../types/project";
-import { getCurrentUser } from "./auth.service";
+import { getCurrentUser, invalidateSession } from "./auth.service";
+import { API_URL } from "./api.config";
 
 const STORAGE_KEY = "buildhub_projects";
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const formatTemplateName = (templateSlug?: string) => {
   if (!templateSlug) return "Custom Website";
@@ -32,6 +32,7 @@ const mapWebsiteToProject = (
 
   const project: Project = {
     id: website._id || website.id,
+    slug: website.slug,
     name: website.name || "Untitled Website",
     templateName: formatTemplateName(
       website.templateSlug
@@ -100,6 +101,10 @@ export const fetchProjects = async (): Promise<
   console.log("Fetched projects:", data);
 
   if (!response.ok) {
+    if (response.status === 403) {
+      invalidateSession(data?.message || "Session expired");
+    }
+
     throw new Error(
       data?.message || "Failed to fetch projects"
     );
@@ -150,6 +155,10 @@ export const deleteWebsite = async (id: string) => {
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
+    if (response.status === 403) {
+      invalidateSession(data?.message || "Session expired");
+    }
+
     throw new Error(
       data?.message || "Failed to delete website."
     );

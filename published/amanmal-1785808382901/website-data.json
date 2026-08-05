@@ -1,0 +1,117 @@
+{
+  "website": {
+    "_id": "6a7145fe867129e1dc24f7bf",
+    "userId": "6a6925a3009f613fce9eeb4a",
+    "templateSlug": "ecommerce",
+    "name": "amanmal",
+    "slug": "amanmal-1785808382901",
+    "status": "published",
+    "subdomain": "amanmal",
+    "customDomain": "",
+    "templateVersion": "1.0.0",
+    "isPublished": true,
+    "visitors": 0,
+    "storage": "0 GB",
+    "owner": null,
+    "title": "",
+    "templateId": "",
+    "domain": "",
+    "isPublic": false,
+    "createdAt": "2026-08-04T01:53:02.978Z",
+    "updatedAt": "2026-08-04T01:54:31.554Z",
+    "__v": 0
+  },
+  "settings": {
+    "socialLinks": {
+      "facebook": "",
+      "instagram": "",
+      "twitter": "",
+      "youtube": "",
+      "linkedin": ""
+    },
+    "_id": "6a7145ff867129e1dc24f7c0",
+    "websiteId": "6a7145fe867129e1dc24f7bf",
+    "companyName": "",
+    "email": "",
+    "phone": "",
+    "whatsapp": "",
+    "address": "",
+    "logo": "",
+    "favicon": "",
+    "createdAt": "2026-08-04T01:53:03.061Z",
+    "updatedAt": "2026-08-04T01:53:03.061Z",
+    "__v": 0
+  },
+  "theme": {
+    "_id": "6a7145ff867129e1dc24f7c1",
+    "websiteId": "6a7145fe867129e1dc24f7bf",
+    "primaryColor": "#2563eb",
+    "secondaryColor": "#0f172a",
+    "accentColor": "#06b6d4",
+    "successColor": "#22c55e",
+    "warningColor": "#f59e0b",
+    "dangerColor": "#ef4444",
+    "backgroundColor": "#ffffff",
+    "textColor": "#111827",
+    "fontFamily": "Inter",
+    "borderRadius": 12,
+    "darkMode": false,
+    "layout": "full",
+    "createdAt": "2026-08-04T01:53:03.098Z",
+    "updatedAt": "2026-08-04T01:53:03.098Z",
+    "__v": 0
+  },
+  "pages": [
+    {
+      "seo": {
+        "title": "",
+        "description": "",
+        "keywords": []
+      },
+      "_id": "6a7145ff867129e1dc24f7c2",
+      "websiteId": "6a7145fe867129e1dc24f7bf",
+      "title": "Home",
+      "slug": "home",
+      "type": "system",
+      "sections": [],
+      "isHomePage": true,
+      "isPublished": true,
+      "sortOrder": 1,
+      "createdAt": "2026-08-04T01:53:03.163Z",
+      "updatedAt": "2026-08-04T01:53:03.163Z",
+      "__v": 0
+    },
+    {
+      "seo": {
+        "title": "",
+        "description": "",
+        "keywords": []
+      },
+      "_id": "6a7145ff867129e1dc24f7c3",
+      "websiteId": "6a7145fe867129e1dc24f7bf",
+      "title": "Products",
+      "slug": "products",
+      "type": "system",
+      "sections": [],
+      "isHomePage": false,
+      "isPublished": true,
+      "sortOrder": 2,
+      "createdAt": "2026-08-04T01:53:03.202Z",
+      "updatedAt": "2026-08-04T01:53:03.202Z",
+      "__v": 0
+    }
+  ],
+  "moduleBindings": {
+    "websiteId": "6a7145fe867129e1dc24f7bf",
+    "websiteSlug": "amanmal-1785808382901",
+    "templateSlug": "ecommerce",
+    "moduleBasePath": "/api/modules/ecommerce",
+    "moduleRoutes": {
+      "adminBase": "/api/modules/ecommerce/admin/6a7145fe867129e1dc24f7bf/amanmal-1785808382901",
+      "userBase": "/api/modules/ecommerce/user/6a7145fe867129e1dc24f7bf/amanmal-1785808382901",
+      "authAdminLogin": "/api/modules/ecommerce/auth/admin/6a7145fe867129e1dc24f7bf/amanmal-1785808382901/login",
+      "authUserLogin": "/api/modules/ecommerce/auth/user/6a7145fe867129e1dc24f7bf/amanmal-1785808382901/login"
+    },
+    "siteUrl": "/sites/amanmal-1785808382901"
+  }
+}

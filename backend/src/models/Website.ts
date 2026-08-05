@@ -19,6 +19,10 @@ export interface IWebsite extends Document {
 
   isPublished: boolean;
 
+  visitors: number;
+
+  storage: string;
+
   owner?: Types.ObjectId;
 
   title?: string;
@@ -96,6 +100,17 @@ const WebsiteSchema = new Schema<IWebsite>(
     isPublished: {
       type: Boolean,
       default: false,
+    },
+
+    visitors: {
+      type: Number,
+      default: 0,
+    },
+
+    storage: {
+      type: String,
+      default: "0 GB",
+      trim: true,
     },
 
     owner: {

@@ -1,0 +1,117 @@
+{
+  "website": {
+    "_id": "6a6ac58cedf6cff4b6026c81",
+    "userId": "6a6925a3009f613fce9eeb4a",
+    "templateSlug": "hospital",
+    "name": "mukeemkhan",
+    "slug": "mukeemkhan-1785382284458",
+    "status": "published",
+    "subdomain": "mukeemkhan",
+    "customDomain": "",
+    "templateVersion": "1.0.0",
+    "isPublished": true,
+    "visitors": 0,
+    "storage": "0 GB",
+    "owner": null,
+    "title": "",
+    "templateId": "",
+    "domain": "",
+    "isPublic": false,
+    "createdAt": "2026-07-30T03:31:24.958Z",
+    "updatedAt": "2026-07-30T03:32:44.957Z",
+    "__v": 0
+  },
+  "settings": {
+    "socialLinks": {
+      "facebook": "",
+      "instagram": "",
+      "twitter": "",
+      "youtube": "",
+      "linkedin": ""
+    },
+    "_id": "6a6ac58dedf6cff4b6026c82",
+    "websiteId": "6a6ac58cedf6cff4b6026c81",
+    "companyName": "",
+    "email": "",
+    "phone": "",
+    "whatsapp": "",
+    "address": "",
+    "logo": "",
+    "favicon": "",
+    "createdAt": "2026-07-30T03:31:25.157Z",
+    "updatedAt": "2026-07-30T03:31:25.157Z",
+    "__v": 0
+  },
+  "theme": {
+    "_id": "6a6ac58dedf6cff4b6026c83",
+    "websiteId": "6a6ac58cedf6cff4b6026c81",
+    "primaryColor": "#2563eb",
+    "secondaryColor": "#0f172a",
+    "accentColor": "#06b6d4",
+    "successColor": "#22c55e",
+    "warningColor": "#f59e0b",
+    "dangerColor": "#ef4444",
+    "backgroundColor": "#ffffff",
+    "textColor": "#111827",
+    "fontFamily": "Inter",
+    "borderRadius": 12,
+    "darkMode": false,
+    "layout": "full",
+    "createdAt": "2026-07-30T03:31:25.296Z",
+    "updatedAt": "2026-07-30T03:31:25.296Z",
+    "__v": 0
+  },
+  "pages": [
+    {
+      "seo": {
+        "title": "",
+        "description": "",
+        "keywords": []
+      },
+      "_id": "6a6ac58dedf6cff4b6026c84",
+      "websiteId": "6a6ac58cedf6cff4b6026c81",
+      "title": "Home",
+      "slug": "home",
+      "type": "system",
+      "sections": [],
+      "isHomePage": true,
+      "isPublished": true,
+      "sortOrder": 1,
+      "createdAt": "2026-07-30T03:31:25.456Z",
+      "updatedAt": "2026-07-30T03:31:25.456Z",
+      "__v": 0
+    },
+    {
+      "seo": {
+        "title": "",
+        "description": "",
+        "keywords": []
+      },
+      "_id": "6a6ac58dedf6cff4b6026c85",
+      "websiteId": "6a6ac58cedf6cff4b6026c81",
+      "title": "Services",
+      "slug": "services",
+      "type": "system",
+      "sections": [],
+      "isHomePage": false,
+      "isPublished": true,
+      "sortOrder": 2,
+      "createdAt": "2026-07-30T03:31:26.053Z",
+      "updatedAt": "2026-07-30T03:31:26.053Z",
+      "__v": 0
+    }
+  ],
+  "moduleBindings": {
+    "websiteId": "6a6ac58cedf6cff4b6026c81",
+    "websiteSlug": "mukeemkhan-1785382284458",
+    "templateSlug": "hospital",
+    "moduleBasePath": "/api/modules/hospital",
+    "moduleRoutes": {
+      "adminBase": "/api/modules/hospital/admin/6a6ac58cedf6cff4b6026c81/mukeemkhan-1785382284458",
+      "userBase": "/api/modules/hospital/user/6a6ac58cedf6cff4b6026c81/mukeemkhan-1785382284458",
+      "authAdminLogin": "/api/modules/hospital/auth/admin/6a6ac58cedf6cff4b6026c81/mukeemkhan-1785382284458/login",
+      "authUserLogin": "/api/modules/hospital/auth/user/6a6ac58cedf6cff4b6026c81/mukeemkhan-1785382284458/login"
+    },
+    "siteUrl": "/sites/mukeemkhan-1785382284458"
+  }
+}

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { publishWebsite } from "../publish/publish.controller";
+import { publishWebsite } from "../platform/publish/publish.controller";
 
 const router = Router();
 

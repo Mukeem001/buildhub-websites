@@ -1,0 +1,14 @@
+{
+  "name": "websites-builder",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "npm --prefix client run dev",
+    "dev:client": "npm --prefix client run dev",
+    "dev:admin": "npm --prefix buildhub-admin run dev",
+    "dev:backend": "npm --prefix backend run dev",
+    "build:client": "npm --prefix client run build",
+    "build:admin": "npm --prefix buildhub-admin run build",
+    "build:backend": "npm --prefix backend run build"
+  }
+}
