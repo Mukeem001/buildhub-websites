@@ -5,12 +5,15 @@ import { fetchProjects } from "@/services/project.service";
 import { connectDomain, verifyDomain } from "@/services/publish.service";
 import type { Project } from "@/types/project";
 
+type Provider = "godaddy" | "hostinger" | "other";
+
 const Domain = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedWebsiteId, setSelectedWebsiteId] = useState("");
   const [domain, setDomain] = useState("");
   const [dnsHost, setDnsHost] = useState("www");
-  const [dnsTarget, setDnsTarget] = useState("cname.buildhub.dev");
+  const [dnsTarget, setDnsTarget] = useState("builder.buildhub.app");
+  const [provider, setProvider] = useState<Provider>("godaddy");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +49,7 @@ const Domain = () => {
         websiteId: selectedWebsiteId,
         customDomain: domain.trim(),
         dnsHost: dnsHost.trim() || "www",
-        dnsTarget: dnsTarget.trim() || "cname.buildhub.dev",
+        dnsTarget: dnsTarget.trim() || "builder.buildhub.app",
       });
 
       await verifyDomain(selectedWebsiteId);
@@ -54,12 +57,40 @@ const Domain = () => {
       setMessage(`Domain connected successfully for ${payload?.domain || domain}.`);
       setDomain("");
       setDnsHost("www");
-      setDnsTarget("cname.buildhub.dev");
+      setDnsTarget("builder.buildhub.app");
     } catch (err: any) {
       setError(err?.message || "Unable to connect domain.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const providerInstructions = {
+    godaddy: {
+      title: "GoDaddy DNS setup",
+      steps: [
+        "Open your GoDaddy Domain Manager.",
+        "Select your domain and open DNS Management.",
+        "Add or edit a CNAME record with Host: www and Value: builder.buildhub.app.",
+        "If you want the root domain, add an A record pointing to your server IP.",
+      ],
+    },
+    hostinger: {
+      title: "Hostinger DNS setup",
+      steps: [
+        "Open Hostinger DNS Zone Editor.",
+        "Create a CNAME record for www with Value: builder.buildhub.app.",
+        "If needed, add an A record for the root domain to your server IP.",
+      ],
+    },
+    other: {
+      title: "Other providers",
+      steps: [
+        "Open your DNS management page.",
+        "Create a CNAME record for www pointing to builder.buildhub.app.",
+        "If you use the root domain, use an A record pointing to your server IP.",
+      ],
+    },
   };
 
   return (
@@ -129,6 +160,21 @@ const Domain = () => {
                 />
               </div>
 
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-300">
+                  Domain Provider
+                </label>
+                <select
+                  value={provider}
+                  onChange={(e) => setProvider(e.target.value as Provider)}
+                  className="h-11 w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 text-white outline-none transition focus:border-blue-500"
+                >
+                  <option value="godaddy">GoDaddy</option>
+                  <option value="hostinger">Hostinger</option>
+                  <option value="other">Other Provider</option>
+                </select>
+              </div>
+
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-300">
@@ -151,7 +197,7 @@ const Domain = () => {
                     type="text"
                     value={dnsTarget}
                     onChange={(e) => setDnsTarget(e.target.value)}
-                    placeholder="cname.buildhub.dev"
+                    placeholder="builder.buildhub.app"
                     className="h-11 w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 text-white outline-none transition focus:border-blue-500"
                   />
                 </div>
@@ -179,13 +225,50 @@ const Domain = () => {
             </button>
           </form>
 
-          <div className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
-            <h2 className="text-xl font-semibold">What happens next?</h2>
-            <ul className="mt-4 space-y-3 text-sm text-slate-300">
-              <li>• The domain is sent to the backend and stored against your selected website.</li>
-              <li>• A verification request is triggered right after connection.</li>
-              <li>• You can then update DNS records at your domain provider.</li>
-            </ul>
+          <div className="space-y-6">
+            <div className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
+              <h2 className="text-xl font-semibold">What happens next?</h2>
+              <ul className="mt-4 space-y-3 text-sm text-slate-300">
+                <li>• The domain is saved to the backend for the selected website.</li>
+                <li>• Verification starts immediately after the connection request.</li>
+                <li>• DNS propagation can take a few minutes to a few hours.</li>
+              </ul>
+            </div>
+
+            <div className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
+              <h2 className="text-xl font-semibold">{providerInstructions[provider].title}</h2>
+              <ul className="mt-4 space-y-3 text-sm text-slate-300">
+                {providerInstructions[provider].steps.map((step) => (
+                  <li key={step} className="flex gap-2">
+                    <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-blue-400" />
+                    <span>{step}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mt-5 rounded-2xl border border-slate-800 bg-slate-950/60 p-4 text-sm text-slate-300">
+                <p className="font-semibold text-slate-100">DNS values to use</p>
+                <p className="mt-2">Host: {dnsHost || "www"}</p>
+                <p>Value: {dnsTarget || "builder.buildhub.app"}</p>
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
+              <h2 className="text-xl font-semibold">Connected websites</h2>
+              <div className="mt-4 space-y-3 text-sm text-slate-300">
+                {projects.length === 0 ? (
+                  <p>No websites loaded yet.</p>
+                ) : (
+                  projects.map((project) => (
+                    <div key={project.id} className="rounded-2xl border border-slate-800 bg-slate-950/60 p-3">
+                      <div className="font-semibold text-white">{project.name}</div>
+                      <div className="mt-1 text-slate-400">Status: {project.status}</div>
+                      <div className="mt-1 text-slate-400">Domain: {project.domain || "Not connected yet"}</div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
