@@ -28,7 +28,7 @@ const Analytics: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [projects, setProjects] = useState<Project[]>([]);
   const [dashboard, setDashboard] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
   const siteId = searchParams.get("site") || undefined;
 
@@ -70,7 +70,6 @@ const Analytics: React.FC = () => {
   const totalVisitors = selectedProject?.visits || 0;
   const totalPages = dashboard?.pages?.length || 0;
   const publishedState = selectedProject?.status === "live" ? "Published" : "Draft";
-  const companyName = dashboard?.settings?.companyName || selectedProject?.name || "Website";
   const formattedVisitors = totalVisitors >= 1000 ? `${(totalVisitors / 1000).toFixed(1)}K` : String(totalVisitors);
 
   return (

@@ -27,6 +27,7 @@ const initialProjects: Project[] = [];
 interface Website {
   id: number;
   name: string;
+  slug?: string;
   category?: string;
   status: WebsiteStatus;
   url?: string;

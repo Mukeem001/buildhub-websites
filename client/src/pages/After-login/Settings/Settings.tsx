@@ -28,12 +28,12 @@ const Settings = () => {
   const [marketingEmails, setMarketingEmails] = useState(false);
   const [autoSave, setAutoSave] = useState(true);
   const [saved, setSaved] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
   const [companyName, setCompanyName] = useState("");
   const [businessEmail, setBusinessEmail] = useState("");
   const [businessPhone, setBusinessPhone] = useState("");
   const [businessAddress, setBusinessAddress] = useState("");
-  const [websiteSettingsLoaded, setWebsiteSettingsLoaded] = useState(false);
+  const [, setWebsiteSettingsLoaded] = useState(false);
   const [searchParams] = useSearchParams();
 
   const websiteId = searchParams.get("site") || undefined;

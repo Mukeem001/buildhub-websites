@@ -46,10 +46,10 @@ const invoices: Invoice[] = [
 ];
 
 const Billing: React.FC = () => {
-  const { user } = useAuth();
+  const {} = useAuth();
   const [showPlans, setShowPlans] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
@@ -68,7 +68,6 @@ const Billing: React.FC = () => {
   }, []);
 
   const totalVisitors = projects.reduce((sum, project) => sum + (project.visits || 0), 0);
-  const currentPlan = user?.plan || "Free Plan";
   const formattedVisitors = totalVisitors >= 1000 ? `${(totalVisitors / 1000).toFixed(1)}K` : String(totalVisitors);
 
   return (
