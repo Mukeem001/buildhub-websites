@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+const basePath = typeof window !== "undefined" ? window.location.pathname.replace(/\/$/, "") : "/";
 import Home from './Pages/Home';
 import Menu from './Pages/Menu';
 import Cart from './Pages/Cart';
@@ -47,7 +49,7 @@ const App = () => {
   };
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={basePath}>
       <Navbar cartCount={cartItems.length} />
       <Routes>
          <Route index element={<Home />} />

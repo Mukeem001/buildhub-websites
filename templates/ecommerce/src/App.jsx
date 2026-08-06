@@ -1,6 +1,8 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
+const basePath = typeof window !== "undefined" ? window.location.pathname.replace(/\/$/, "") : "/";
+
 import Home from "./Pages/Home";
 import Products from "./Pages/Products";
 import Wishlist from "./Pages/Wishlist";
@@ -25,7 +27,7 @@ import ForgetPassword from "./Pages/Forgetpassword";
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={basePath}>
     <Navbar/>
 
 
