@@ -5,6 +5,18 @@ import { fetchProjects } from "@/services/project.service";
 import { connectDomain, verifyDomain } from "@/services/publish.service";
 import type { Project } from "@/types/project";
 
+const formatDomainLabel = (project: Project) => {
+  if (project.domain && project.domain !== project.url) {
+    return project.domain;
+  }
+
+  if (project.url) {
+    return project.url;
+  }
+
+  return "Not connected yet";
+};
+
 type Provider = "godaddy" | "hostinger" | "other";
 
 const Domain = () => {
@@ -263,7 +275,7 @@ const Domain = () => {
                     <div key={project.id} className="rounded-2xl border border-slate-800 bg-slate-950/60 p-3">
                       <div className="font-semibold text-white">{project.name}</div>
                       <div className="mt-1 text-slate-400">Status: {project.status}</div>
-                      <div className="mt-1 text-slate-400">Domain: {project.domain || "Not connected yet"}</div>
+                      <div className="mt-1 text-slate-400">Domain: {formatDomainLabel(project)}</div>
                     </div>
                   ))
                 )}

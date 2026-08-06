@@ -4,7 +4,7 @@ const getDefaultApiUrl = (): string => {
   }
 
   if (typeof window === "undefined") {
-    return "http://localhost:5000/api";
+    return "http://2.28.13.238:5000/api";
   }
 
   const protocol = window.location.protocol;

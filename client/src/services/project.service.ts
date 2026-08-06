@@ -22,7 +22,7 @@ const mapWebsiteToProject = (
   const apiOrigin =
     import.meta.env.VITE_API_URL
       ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, "")
-      : "http://localhost:5000";
+      : "http://2.28.13.238:5000";
 
   const websiteUrl = website.customDomain
     ? `https://${website.customDomain}`
