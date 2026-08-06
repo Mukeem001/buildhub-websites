@@ -21,8 +21,7 @@ router.use("/:slug", (req, res) => {
 
   const websiteRoot = path.join(
     PUBLISHED_DIR,
-    slug,
-    "dist"
+    slug
   );
 
   if (!fs.existsSync(websiteRoot)) {

@@ -62,6 +62,31 @@ const writeRuntimeConfig = async (projectPath: string, website: any) => {
   }
 };
 
+const cleanupPublishedBuild = async (projectPath: string) => {
+  const pathsToRemove = [
+    "dist",
+    "src",
+    "public",
+    "node_modules",
+    "package.json",
+    "package-lock.json",
+    "vite.config.ts",
+    "vite.config.js",
+    "tsconfig.json",
+    "tsconfig.app.json",
+    "tsconfig.node.json",
+    "README.md",
+  ];
+
+  for (const relativePath of pathsToRemove) {
+    const absolutePath = path.join(projectPath, relativePath);
+
+    if (await fs.pathExists(absolutePath)) {
+      await fs.remove(absolutePath);
+    }
+  }
+};
+
 export const publishWebsite = async (
   websiteId: string
 ) => {
@@ -154,13 +179,24 @@ export const publishWebsite = async (
 
   await writeRuntimeConfig(projectPath, website);
 
-  const builtIndex = path.join(
-    projectPath,
-    "dist",
-    "index.html"
-  );
+  const distDir = path.join(projectPath, "dist");
+  const builtIndex = path.join(distDir, "index.html");
 
   if (!(await fs.pathExists(builtIndex))) {
+    throw new Error(
+      "Publish failed: built site output not found."
+    );
+  }
+
+  await fs.copy(distDir, projectPath, {
+    overwrite: true,
+  });
+
+  await cleanupPublishedBuild(projectPath);
+
+  const publishedIndex = path.join(projectPath, "index.html");
+
+  if (!(await fs.pathExists(publishedIndex))) {
     throw new Error(
       "Publish failed: built site output not found."
     );
