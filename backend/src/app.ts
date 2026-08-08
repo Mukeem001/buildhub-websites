@@ -228,7 +228,6 @@ app.use(async (req, res, next) => {
 
   const domainRecord = await Domain.findOne({
     hostname: hostname,
-    verificationStatus: "verified",
   });
 
   if (!domainRecord) {
