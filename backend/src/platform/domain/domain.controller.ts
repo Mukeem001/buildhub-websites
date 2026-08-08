@@ -45,9 +45,13 @@ export const verifyDomain = async (req: Request, res: Response) => {
 export const removeDomain = async (req: Request, res: Response) => {
   try {
     const websiteId = Array.isArray(req.params.websiteId) ? req.params.websiteId[0] : req.params.websiteId;
-    await domainService.removeDomain(websiteId);
+    const deleted = await domainService.removeDomain(websiteId);
 
-    return res.json({ success: true, message: "Domain removed successfully." });
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: "No connected domain found for this website." });
+    }
+
+    return res.json({ success: true, message: "Domain removed successfully.", data: deleted });
   } catch (error: any) {
     return res.status(500).json({ success: false, message: error.message });
   }

@@ -244,6 +244,10 @@ export const deleteDomain = async (websiteId: string) => {
       invalidateSession(payload?.message || "Session expired");
     }
 
+    if (response.status === 404) {
+      throw new Error(payload?.message || "No connected domain found for this website.");
+    }
+
     throw new Error(
       payload?.message ||
         "Failed to delete domain"

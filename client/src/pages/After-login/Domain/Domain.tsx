@@ -204,7 +204,7 @@ const Domain = () => {
     }
   };
 
-  const handleDelete = async (websiteId?: string) => {
+  const handleDelete = async (websiteId?: string, websiteName?: string, projectDomain?: string) => {
     const id = websiteId || selectedWebsiteId;
 
     if (!id) {
@@ -212,7 +212,16 @@ const Domain = () => {
       return;
     }
 
-    if (!window.confirm("Delete this connected domain from the website and database?")) {
+    // determine domain label: prefer explicit projectDomain, then selectedWebsiteDomain
+    const domainLabel = projectDomain || (id === selectedWebsiteId ? selectedWebsiteDomain?.domain : undefined);
+
+    if (!domainLabel) {
+      setError("This website does not have a connected custom domain.");
+      return;
+    }
+
+    const confirmText = `Delete domain "${domainLabel}" from website "${websiteName || id}"? This will remove the connection from the database.`;
+    if (!window.confirm(confirmText)) {
       return;
     }
 
@@ -222,7 +231,7 @@ const Domain = () => {
 
     try {
       await deleteDomain(id);
-      setMessage("Connected domain removed successfully.");
+      setMessage(`Connected domain ${domainLabel} removed successfully.`);
 
       if (id === selectedWebsiteId) {
         await loadDomainDetails(id);
@@ -236,7 +245,7 @@ const Domain = () => {
     }
   };
 
-  const selectedProject = projects.find((project) => project.id === selectedWebsiteId);
+const selectedProject = projects.find((project) => project.id === selectedWebsiteId);
 
   return (
     <div className="min-h-screen bg-slate-950 px-6 py-10 text-white">
@@ -367,7 +376,7 @@ const Domain = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleDelete()}
+                  onClick={() => handleDelete(selectedWebsiteId, selectedProject?.name, selectedWebsiteDomain?.domain)}
                   disabled={!selectedWebsiteId || loading}
                   className="rounded-2xl border border-red-600 bg-red-600/10 px-5 py-3 text-sm font-semibold text-red-200 transition hover:bg-red-600/20 disabled:cursor-not-allowed disabled:opacity-60"
                 >
@@ -486,7 +495,7 @@ const Domain = () => {
                         {hasConnectedDomain(project, selectedWebsiteDomain, selectedWebsiteId) ? (
                           <button
                             type="button"
-                            onClick={() => handleDelete(project.id)}
+                            onClick={() => handleDelete(project.id, project.name, getProjectDomainLabel(project, selectedWebsiteDomain, selectedWebsiteId))}
                             disabled={loading}
                             className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-red-500 text-red-300 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60"
                             title="Delete connected domain"
