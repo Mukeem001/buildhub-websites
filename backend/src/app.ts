@@ -34,6 +34,10 @@ app.set("trust proxy", 1);
 
 app.use(
   helmet({
+    // disable automatic HSTS here because many custom domains may not
+    // have HTTPS yet; HSTS must only be sent over HTTPS and can force
+    // browsers to upgrade requests unexpectedly during rollout.
+    hsts: false,
     contentSecurityPolicy: {
       directives: {
         "default-src": ["'self'"],
