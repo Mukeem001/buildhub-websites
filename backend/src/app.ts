@@ -55,6 +55,29 @@ app.use(
   })
 );
 
+const safeCsp = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "font-src 'self' https: data:",
+  "form-action 'self'",
+  "frame-ancestors 'self'",
+  "img-src 'self' data:",
+  "object-src 'none'",
+  "script-src 'self'",
+  "script-src-attr 'none'",
+  "style-src 'self' https: 'unsafe-inline'",
+].join(';');
+
+app.use((req, res, next) => {
+  res.removeHeader('Strict-Transport-Security');
+  res.removeHeader('Cross-Origin-Opener-Policy');
+  res.removeHeader('Cross-Origin-Resource-Policy');
+  res.removeHeader('Origin-Agent-Cluster');
+  res.removeHeader('Content-Security-Policy-Report-Only');
+  res.setHeader('Content-Security-Policy', safeCsp);
+  next();
+});
+
 app.use(
   cors({
     origin: (origin, callback) => {
