@@ -137,18 +137,6 @@ const limiter = rateLimit({
 app.use(limiter);
 
 /* ===========================
-   Health Check
-=========================== */
-
-app.get("/", (_req, res) => {
-  res.json({
-    success: true,
-    message: "BuildHub Backend Running 🚀",
-    version: "1.0.0",
-  });
-});
-
-/* ===========================
    API Routes
 =========================== */
 
@@ -220,14 +208,30 @@ app.use(async (req, res, next) => {
     return next();
   }
 
-  const hostname = req.hostname?.toLowerCase();
+  const rawHost = Array.isArray(req.headers.host)
+    ? req.headers.host[0]
+    : req.headers.host;
+  let hostname = rawHost
+    ? rawHost.split(":")[0].toLowerCase().replace(/\.$/, "")
+    : req.hostname?.toLowerCase().replace(/\.$/, "");
 
   if (!hostname) {
     return next();
   }
 
+  const hostnamesToTry = [hostname];
+
+  if (hostname.startsWith("www.")) {
+    hostnamesToTry.push(hostname.replace(/^www\./, ""));
+  } else {
+    hostnamesToTry.push(`www.${hostname}`);
+  }
+
   const domainRecord = await Domain.findOne({
-    hostname: hostname,
+    $or: [
+      ...hostnamesToTry.map((host) => ({ hostname: host })),
+      { domain: hostname },
+    ],
   });
 
   if (!domainRecord) {
@@ -244,6 +248,18 @@ app.use(async (req, res, next) => {
 
   req.url = `/sites/${website.slug}${req.url}`;
   next();
+});
+
+/* ===========================
+   Health Check
+=========================== */
+
+app.get("/", (_req, res) => {
+  res.json({
+    success: true,
+    message: "BuildHub Backend Running 🚀",
+    version: "1.0.0",
+  });
 });
 
 /* ===========================
