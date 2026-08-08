@@ -156,6 +156,13 @@ app.use("/api/modules/portfolio", portfolioRoutes);
    Custom domain routing
 ========================== */
 
+const normalizeHostname = (host?: string) => {
+  const rawHost = Array.isArray(host) ? host[0] : host;
+  return rawHost
+    ? rawHost.split(":")[0].toLowerCase().replace(/\.$/, "")
+    : undefined;
+};
+
 app.use(async (req, res, next) => {
   const path = req.path;
 
@@ -167,12 +174,8 @@ app.use(async (req, res, next) => {
     return next();
   }
 
-  const rawHost = Array.isArray(req.headers.host)
-    ? req.headers.host[0]
-    : req.headers.host;
-  let hostname = rawHost
-    ? rawHost.split(":")[0].toLowerCase().replace(/\.$/, "")
-    : req.hostname?.toLowerCase().replace(/\.$/, "");
+  const hostname = normalizeHostname(req.headers.host) ||
+    normalizeHostname(req.hostname);
 
   if (!hostname) {
     return next();
@@ -193,9 +196,11 @@ app.use(async (req, res, next) => {
     ],
   });
 
-  let website = domainRecord
-    ? await Website.findById(domainRecord.websiteId)
-    : null;
+  let website = null;
+
+  if (domainRecord) {
+    website = await Website.findById(domainRecord.websiteId);
+  }
 
   if (!website) {
     website = await Website.findOne({
@@ -208,7 +213,8 @@ app.use(async (req, res, next) => {
     return next();
   }
 
-  req.url = `/sites/${website.slug}${req.url}`;
+  const originalUrl = req.originalUrl || req.url;
+  req.url = `/sites/${website.slug}${originalUrl}`;
   next();
 });
 
