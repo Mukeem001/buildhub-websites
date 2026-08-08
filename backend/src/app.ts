@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
@@ -196,6 +196,14 @@ const normalizeHostname = (host?: string) => {
     : undefined;
 };
 
+const getRequestHostname = (req: Request) => {
+  return (
+    normalizeHostname(req.headers.host) ||
+    normalizeHostname(req.headers["x-forwarded-host"] as string) ||
+    normalizeHostname(req.hostname)
+  );
+};
+
 app.use(async (req, res, next) => {
   const path = req.path;
 
@@ -207,17 +215,17 @@ app.use(async (req, res, next) => {
     return next();
   }
 
-  const hostname = normalizeHostname(req.headers.host) ||
-    normalizeHostname(req.hostname);
+  const hostname = getRequestHostname(req);
 
   if (!hostname) {
     return next();
   }
 
   const hostnamesToTry = [hostname];
+  const hostnameWithoutWww = hostname.replace(/^www\./, "");
 
-  if (hostname.startsWith("www.")) {
-    hostnamesToTry.push(hostname.replace(/^www\./, ""));
+  if (hostnameWithoutWww !== hostname) {
+    hostnamesToTry.push(hostnameWithoutWww);
   } else {
     hostnamesToTry.push(`www.${hostname}`);
   }
@@ -226,6 +234,7 @@ app.use(async (req, res, next) => {
     $or: [
       ...hostnamesToTry.map((host) => ({ hostname: host })),
       { domain: hostname },
+      { domain: hostnameWithoutWww },
     ],
   });
 
@@ -237,7 +246,7 @@ app.use(async (req, res, next) => {
 
   if (!website) {
     website = await Website.findOne({
-      customDomain: hostname,
+      customDomain: { $in: hostnamesToTry },
       isPublished: true,
     });
   }
