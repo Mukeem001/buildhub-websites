@@ -1,6 +1,5 @@
 import { getCurrentUser, invalidateSession } from "./auth.service";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://2.28.13.238:5000/api";
+import { API_URL } from "./api.config";
 
 const mapTemplateSlugForBackend = (templateId: any) => {
   const value = String(templateId ?? "").trim().toLowerCase();

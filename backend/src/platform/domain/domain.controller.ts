@@ -20,6 +20,17 @@ export const connectDomain = async (req: Request, res: Response) => {
   }
 };
 
+export const getDomain = async (req: Request, res: Response) => {
+  try {
+    const websiteId = Array.isArray(req.params.websiteId) ? req.params.websiteId[0] : req.params.websiteId;
+    const data = await domainService.getDomain(websiteId);
+
+    return res.json({ success: true, data });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export const verifyDomain = async (req: Request, res: Response) => {
   try {
     const websiteId = Array.isArray(req.params.websiteId) ? req.params.websiteId[0] : req.params.websiteId;
@@ -28,5 +39,16 @@ export const verifyDomain = async (req: Request, res: Response) => {
     return res.json({ success: true, data });
   } catch (error: any) {
     return res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+export const removeDomain = async (req: Request, res: Response) => {
+  try {
+    const websiteId = Array.isArray(req.params.websiteId) ? req.params.websiteId[0] : req.params.websiteId;
+    await domainService.removeDomain(websiteId);
+
+    return res.json({ success: true, message: "Domain removed successfully." });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
   }
 };

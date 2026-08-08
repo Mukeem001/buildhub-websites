@@ -27,6 +27,10 @@ const formatStatus = (value?: string) => {
   return value.charAt(0).toUpperCase() + value.slice(1);
 };
 
+const isCustomDomain = (project: Project) => {
+  return Boolean(project.domain && project.domain !== project.url);
+};
+
 type Provider = "godaddy" | "hostinger" | "other";
 
 type DomainRecord = {
@@ -185,8 +189,10 @@ const Domain = () => {
     }
   };
 
-  const handleDelete = async () => {
-    if (!selectedWebsiteId) {
+  const handleDelete = async (websiteId?: string) => {
+    const id = websiteId || selectedWebsiteId;
+
+    if (!id) {
       setError("Please select a website first.");
       return;
     }
@@ -200,9 +206,13 @@ const Domain = () => {
     setMessage(null);
 
     try {
-      await deleteDomain(selectedWebsiteId);
+      await deleteDomain(id);
       setMessage("Connected domain removed successfully.");
-      await loadDomainDetails(selectedWebsiteId);
+
+      if (id === selectedWebsiteId) {
+        await loadDomainDetails(id);
+      }
+
       await loadProjects();
     } catch (err: any) {
       setError(err?.message || "Unable to delete domain.");
@@ -342,7 +352,7 @@ const Domain = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={handleDelete}
+                  onClick={() => handleDelete()}
                   disabled={!selectedWebsiteId || loading}
                   className="rounded-2xl border border-red-600 bg-red-600/10 px-5 py-3 text-sm font-semibold text-red-200 transition hover:bg-red-600/20 disabled:cursor-not-allowed disabled:opacity-60"
                 >
@@ -453,9 +463,35 @@ const Domain = () => {
                 ) : (
                   projects.map((project) => (
                     <div key={project.id} className="rounded-2xl border border-slate-800 bg-slate-950/60 p-3">
-                      <div className="font-semibold text-white">{project.name}</div>
-                      <div className="mt-1 text-slate-400">Status: {project.status}</div>
-                      <div className="mt-1 text-slate-400">Domain: {formatDomainLabel(project)}</div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="font-semibold text-white">{project.name}</div>
+                          <div className="mt-1 text-slate-400">Status: {project.status}</div>
+                        </div>
+                        {isCustomDomain(project) ? (
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(project.id)}
+                            disabled={loading}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-red-500 text-red-300 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                            title="Delete connected domain"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="currentColor"
+                              className="h-5 w-5"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M6.75 5.25A.75.75 0 0 1 7.5 4.5h9a.75.75 0 0 1 0 1.5h-9a.75.75 0 0 1-.75-.75ZM9.28 8.28a.75.75 0 0 0-1.06 1.06L10.94 12l-2.72 2.72a.75.75 0 1 0 1.06 1.06L12 13.06l2.72 2.72a.75.75 0 0 0 1.06-1.06L13.06 12l2.72-2.72a.75.75 0 0 0-1.06-1.06L12 10.94 9.28 8.28Z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </button>
+                        ) : null}
+                      </div>
+                      <div className="mt-3 text-slate-400">Domain: {formatDomainLabel(project)}</div>
                     </div>
                   ))
                 )}
