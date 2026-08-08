@@ -16,11 +16,22 @@ class DomainService {
     cnameHost?: string,
     cnameTarget?: string
   ) {
-    const normalizedDomain = domain.toLowerCase();
-    const normalizedHost =
+    let normalizedDomain = domain.toLowerCase();
+    let normalizedHost =
       cnameHost && cnameHost !== "@"
         ? cnameHost.toLowerCase()
         : "@";
+
+    const domainParts = normalizedDomain.split(".");
+
+    if (domainParts.length > 2 && normalizedHost !== "@") {
+      if (domainParts[0] === normalizedHost) {
+        normalizedDomain = domainParts.slice(1).join(".");
+      } else {
+        normalizedHost = domainParts[0];
+        normalizedDomain = domainParts.slice(1).join(".");
+      }
+    }
 
     const hostname =
       normalizedHost === "@"
