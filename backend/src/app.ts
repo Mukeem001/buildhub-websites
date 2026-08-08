@@ -57,7 +57,28 @@ app.use(
         return;
       }
 
-      callback(new Error("CORS origin denied"));
+      let originHost: string;
+      try {
+        originHost = new URL(origin).host
+          .toLowerCase()
+          .replace(/\.$/, "");
+      } catch (error) {
+        callback(new Error("CORS origin denied"));
+        return;
+      }
+
+      Domain.findOne({ hostname: originHost })
+        .then((domain) => {
+          if (domain) {
+            callback(null, true);
+          } else {
+            callback(new Error("CORS origin denied"));
+          }
+        })
+        .catch((error) => {
+          console.error("CORS origin lookup failed:", error);
+          callback(new Error("CORS origin denied"));
+        });
     },
     credentials: true,
     optionsSuccessStatus: 200,
