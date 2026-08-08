@@ -16,31 +16,37 @@ class DomainService {
     cnameHost?: string,
     cnameTarget?: string
   ) {
-    let normalizedDomain = domain.toLowerCase();
-    let normalizedHost =
+    const normalizedInputDomain = domain
+      .toLowerCase()
+      .trim();
+    const normalizedHost =
       cnameHost && cnameHost !== "@"
-        ? cnameHost.toLowerCase()
+        ? cnameHost.toLowerCase().trim()
         : "@";
 
-    const domainParts = normalizedDomain.split(".");
+    const domainParts = normalizedInputDomain.split(".");
 
-    if (domainParts.length > 2 && normalizedHost !== "@") {
-      if (domainParts[0] === normalizedHost) {
-        normalizedDomain = domainParts.slice(1).join(".");
-      } else {
-        normalizedHost = domainParts[0];
-        normalizedDomain = domainParts.slice(1).join(".");
-      }
+    let normalizedDomain = normalizedInputDomain;
+    let hostname = normalizedInputDomain;
+
+    if (domainParts.length === 2) {
+      normalizedDomain = normalizedInputDomain;
+      hostname =
+        normalizedHost === "@"
+          ? normalizedInputDomain
+          : `${normalizedHost}.${normalizedInputDomain}`;
+    } else if (domainParts.length > 2) {
+      // Treat input with more than two labels as a full host.
+      normalizedDomain = normalizedInputDomain;
+      hostname = normalizedInputDomain;
     }
 
-    const hostname =
-      normalizedHost === "@"
-        ? normalizedDomain
-        : `${normalizedHost}.${normalizedDomain}`;
-
-    // Prevent duplicate hostname records
+    // Prevent duplicate hostname or domain records
     const exists = await Domain.findOne({
-      hostname,
+      $or: [
+        { hostname },
+        { domain: normalizedDomain },
+      ],
     });
 
     if (exists) {
