@@ -67,7 +67,19 @@ app.use(
         return;
       }
 
-      Domain.findOne({ hostname: originHost })
+      const hostnamesToTry = [originHost];
+      if (originHost.startsWith("www.")) {
+        hostnamesToTry.push(originHost.replace(/^www\./, ""));
+      } else {
+        hostnamesToTry.push(`www.${originHost}`);
+      }
+
+      Domain.findOne({
+        $or: [
+          ...hostnamesToTry.map((host) => ({ hostname: host })),
+          { domain: originHost },
+        ],
+      })
         .then((domain) => {
           if (domain) {
             callback(null, true);
