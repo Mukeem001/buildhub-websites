@@ -55,7 +55,7 @@ const writeRuntimeConfig = async (projectPath: string, website: any) => {
     if (!indexHtml.includes("website-config.js")) {
       indexHtml = indexHtml.replace(
         "</body>",
-        `  <script src="./website-config.js"></script>\n</body>`
+        `  <script src="${bindings.siteUrl}/website-config.js"></script>\n</body>`
       );
       await fs.writeFile(indexPath, indexHtml, "utf8");
     }
