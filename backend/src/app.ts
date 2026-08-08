@@ -193,13 +193,16 @@ app.use(async (req, res, next) => {
     ],
   });
 
-  if (!domainRecord) {
-    return next();
-  }
+  let website = domainRecord
+    ? await Website.findById(domainRecord.websiteId)
+    : null;
 
-  const website = await Website.findById(
-    domainRecord.websiteId
-  );
+  if (!website) {
+    website = await Website.findOne({
+      customDomain: hostname,
+      isPublished: true,
+    });
+  }
 
   if (!website || !website.isPublished) {
     return next();
@@ -249,63 +252,6 @@ app.get("/api/modules/health", (_req, res) => {
       },
     ],
   });
-});
-
-/* ===========================
-   Custom domain routing
-=========================== */
-
-app.use(async (req, res, next) => {
-  const path = req.path;
-
-  if (
-    path.startsWith("/api") ||
-    path.startsWith("/sites") ||
-    path.startsWith("/favicon")
-  ) {
-    return next();
-  }
-
-  const rawHost = Array.isArray(req.headers.host)
-    ? req.headers.host[0]
-    : req.headers.host;
-  let hostname = rawHost
-    ? rawHost.split(":")[0].toLowerCase().replace(/\.$/, "")
-    : req.hostname?.toLowerCase().replace(/\.$/, "");
-
-  if (!hostname) {
-    return next();
-  }
-
-  const hostnamesToTry = [hostname];
-
-  if (hostname.startsWith("www.")) {
-    hostnamesToTry.push(hostname.replace(/^www\./, ""));
-  } else {
-    hostnamesToTry.push(`www.${hostname}`);
-  }
-
-  const domainRecord = await Domain.findOne({
-    $or: [
-      ...hostnamesToTry.map((host) => ({ hostname: host })),
-      { domain: hostname },
-    ],
-  });
-
-  if (!domainRecord) {
-    return next();
-  }
-
-  const website = await Website.findById(
-    domainRecord.websiteId
-  );
-
-  if (!website || !website.isPublished) {
-    return next();
-  }
-
-  req.url = `/sites/${website.slug}${req.url}`;
-  next();
 });
 
 /* ===========================
