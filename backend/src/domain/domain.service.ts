@@ -1,5 +1,6 @@
 import dns from "dns";
 import Domain from "./domain.model";
+import Website from "../models/Website";
 import env from "../config/env";
 
 const resolver = dns.promises;
@@ -54,6 +55,11 @@ class DomainService {
       verificationStatus: "pending",
 
       sslStatus: "pending",
+    });
+
+    await Website.findByIdAndUpdate(websiteId, {
+      customDomain: normalizedDomain,
+      domain: normalizedDomain,
     });
 
     return newDomain;
@@ -155,9 +161,18 @@ class DomainService {
   async removeDomain(
     websiteId: string
   ) {
-    return await Domain.findOneAndDelete({
+    const domainRecord = await Domain.findOneAndDelete({
       websiteId,
     });
+
+    if (domainRecord) {
+      await Website.findByIdAndUpdate(websiteId, {
+        customDomain: "",
+        domain: "",
+      });
+    }
+
+    return domainRecord;
   }
 }
 

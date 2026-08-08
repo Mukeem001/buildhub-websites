@@ -189,6 +189,71 @@ export const verifyDomain = async (
   return payload?.data;
 };
 
+export const getWebsiteDomain = async (websiteId: string) => {
+  const user = getCurrentUser();
+
+  if (!user?.id) {
+    throw new Error("Please log in before fetching domain details.");
+  }
+
+  const response = await fetch(
+    `${API_URL}/domain/${websiteId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${user.token || ""}`,
+      },
+    }
+  );
+
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    if (response.status === 403) {
+      invalidateSession(payload?.message || "Session expired");
+    }
+
+    throw new Error(
+      payload?.message ||
+        "Failed to fetch domain details"
+    );
+  }
+
+  return payload?.data;
+};
+
+export const deleteDomain = async (websiteId: string) => {
+  const user = getCurrentUser();
+
+  if (!user?.id) {
+    throw new Error("Please log in before deleting a domain.");
+  }
+
+  const response = await fetch(
+    `${API_URL}/domain/${websiteId}`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${user.token || ""}`,
+      },
+    }
+  );
+
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    if (response.status === 403) {
+      invalidateSession(payload?.message || "Session expired");
+    }
+
+    throw new Error(
+      payload?.message ||
+        "Failed to delete domain"
+    );
+  }
+
+  return payload?.data;
+};
+
 export const connectDomain = async (data: any) => {
   const user = getCurrentUser();
 
