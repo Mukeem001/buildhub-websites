@@ -146,12 +146,70 @@ app.use("/api/templates", templateRoutes);
 app.use("/api/websites", websiteRoutes);
 app.use("/api/publish", publishRoutes);
 app.use("/api/pages", pageRoutes);
-app.use("/sites", websiteServerRoutes);
 app.use("/api/domain", domainRoutes);
 app.use("/api/modules/ecommerce", ecommerceRoutes);
 app.use("/api/modules/restaurant", restaurantRoutes);
 app.use("/api/modules/hospital", hospitalRoutes);
 app.use("/api/modules/portfolio", portfolioRoutes);
+
+/* ===========================
+   Custom domain routing
+========================== */
+
+app.use(async (req, res, next) => {
+  const path = req.path;
+
+  if (
+    path.startsWith("/api") ||
+    path.startsWith("/sites") ||
+    path.startsWith("/favicon")
+  ) {
+    return next();
+  }
+
+  const rawHost = Array.isArray(req.headers.host)
+    ? req.headers.host[0]
+    : req.headers.host;
+  let hostname = rawHost
+    ? rawHost.split(":")[0].toLowerCase().replace(/\.$/, "")
+    : req.hostname?.toLowerCase().replace(/\.$/, "");
+
+  if (!hostname) {
+    return next();
+  }
+
+  const hostnamesToTry = [hostname];
+
+  if (hostname.startsWith("www.")) {
+    hostnamesToTry.push(hostname.replace(/^www\./, ""));
+  } else {
+    hostnamesToTry.push(`www.${hostname}`);
+  }
+
+  const domainRecord = await Domain.findOne({
+    $or: [
+      ...hostnamesToTry.map((host) => ({ hostname: host })),
+      { domain: hostname },
+    ],
+  });
+
+  if (!domainRecord) {
+    return next();
+  }
+
+  const website = await Website.findById(
+    domainRecord.websiteId
+  );
+
+  if (!website || !website.isPublished) {
+    return next();
+  }
+
+  req.url = `/sites/${website.slug}${req.url}`;
+  next();
+});
+
+app.use("/sites", websiteServerRoutes);
 
 app.get("/api/modules/health", (_req, res) => {
   res.status(200).json({
