@@ -31,6 +31,21 @@ const isCustomDomain = (project: Project) => {
   return Boolean(project.domain && project.domain !== project.url);
 };
 
+const hasConnectedDomain = (project: Project, selectedWebsiteDomain: DomainRecord | null, selectedWebsiteId: string) => {
+  if (isCustomDomain(project)) {
+    return true;
+  }
+  return Boolean(project.id === selectedWebsiteId && selectedWebsiteDomain?.domain);
+};
+
+const getProjectDomainLabel = (project: Project, selectedWebsiteDomain: DomainRecord | null, selectedWebsiteId: string) => {
+  if (project.id === selectedWebsiteId && selectedWebsiteDomain?.domain) {
+    return selectedWebsiteDomain.domain;
+  }
+
+  return formatDomainLabel(project);
+};
+
 type Provider = "godaddy" | "hostinger" | "other";
 
 type DomainRecord = {
@@ -468,7 +483,7 @@ const Domain = () => {
                           <div className="font-semibold text-white">{project.name}</div>
                           <div className="mt-1 text-slate-400">Status: {project.status}</div>
                         </div>
-                        {isCustomDomain(project) ? (
+                        {hasConnectedDomain(project, selectedWebsiteDomain, selectedWebsiteId) ? (
                           <button
                             type="button"
                             onClick={() => handleDelete(project.id)}
@@ -491,7 +506,7 @@ const Domain = () => {
                           </button>
                         ) : null}
                       </div>
-                      <div className="mt-3 text-slate-400">Domain: {formatDomainLabel(project)}</div>
+                      <div className="mt-3 text-slate-400">Domain: {getProjectDomainLabel(project, selectedWebsiteDomain, selectedWebsiteId)}</div>
                     </div>
                   ))
                 )}
