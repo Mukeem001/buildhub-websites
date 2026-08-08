@@ -52,13 +52,22 @@ const writeRuntimeConfig = async (projectPath: string, website: any) => {
   if (await fs.pathExists(indexPath)) {
     let indexHtml = await fs.readFile(indexPath, "utf8");
 
-    if (!indexHtml.includes("website-config.js")) {
+    const absoluteScript = `  <script src="${bindings.siteUrl}/website-config.js"></script>`;
+    const websiteConfigRegex = /<script\s+src=["'](?:\.\/)?website-config\.js["']><\/script>/i;
+
+    if (websiteConfigRegex.test(indexHtml)) {
+      indexHtml = indexHtml.replace(
+        websiteConfigRegex,
+        absoluteScript
+      );
+    } else if (!indexHtml.includes("website-config.js")) {
       indexHtml = indexHtml.replace(
         "</body>",
-        `  <script src="${bindings.siteUrl}/website-config.js"></script>\n</body>`
+        `${absoluteScript}\n</body>`
       );
-      await fs.writeFile(indexPath, indexHtml, "utf8");
     }
+
+    await fs.writeFile(indexPath, indexHtml, "utf8");
   }
 };
 
