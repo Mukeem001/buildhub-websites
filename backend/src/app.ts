@@ -18,6 +18,7 @@ import superAdminRoutes from "./super-admin/super-admin.routes";
 import domainRoutes from "./platform/domain/domain.routes";
 import Domain from "./domain/domain.model";
 import Website from "./models/Website";
+import AllowOrigin from "./models/AllowOrigin";
 import ecommerceRoutes from "./modules/ecommerce/ecommerce.routes";
 import restaurantRoutes from "./modules/restaurant/restaurant.routes";
 import hospitalRoutes from "./modules/hospital/hospital.routes";
@@ -110,6 +111,7 @@ app.use(
       const normalizeEntry = (entry: string) =>
         entry.toLowerCase().replace(/^https?:\/\//, "").replace(/\/$/, "");
 
+
       if (
         env.allowedOrigins.some((entry) => {
           const n = normalizeEntry(entry);
@@ -118,6 +120,19 @@ app.use(
       ) {
         callback(null, true);
         return;
+      }
+
+      // Check database allowlist collection for explicit allowed origins.
+      const allowlistCandidates = [origin.toLowerCase(), originHost, originHost.replace(/^www\./, "")];
+      try {
+        const allowed = await AllowOrigin.findOne({ origin: { $in: allowlistCandidates } }).lean();
+        if (allowed) {
+          callback(null, true);
+          return;
+        }
+      } catch (err) {
+        console.error("AllowOrigin lookup failed:", err);
+        // continue to domain lookup as fallback
       }
 
       const hostnamesToTry = [originHost];
