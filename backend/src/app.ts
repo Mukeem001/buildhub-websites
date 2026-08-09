@@ -87,12 +87,6 @@ app.use(
         return;
       }
 
-      // Allow configured origins
-      if (env.allowedOrigins.includes(origin)) {
-        callback(null, true);
-        return;
-      }
-
       // In development allow localhost or local network origins
       const localOriginRegex = /^https?:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+|192\.168\.\d+\.\d+)(:\d+)?$/;
 
@@ -101,6 +95,7 @@ app.use(
         return;
       }
 
+      // Normalize origin into a host (e.g. 'http://example.com' -> 'example.com')
       let originHost: string;
       try {
         originHost = new URL(origin).host
@@ -108,6 +103,20 @@ app.use(
           .replace(/\.$/, "");
       } catch (error) {
         callback(new Error("CORS origin denied"));
+        return;
+      }
+
+      // Allow configured origins (compare by normalized host or full origin)
+      const normalizeEntry = (entry: string) =>
+        entry.toLowerCase().replace(/^https?:\/\//, "").replace(/\/$/, "");
+
+      if (
+        env.allowedOrigins.some((entry) => {
+          const n = normalizeEntry(entry);
+          return n === originHost || n === origin.toLowerCase();
+        })
+      ) {
+        callback(null, true);
         return;
       }
 
