@@ -55,6 +55,7 @@ type DomainRecord = {
   cnameTarget?: string;
   verificationStatus?: string;
   sslStatus?: string;
+  sslError?: string;
   createdAt?: string;
   updatedAt?: string;
 };
