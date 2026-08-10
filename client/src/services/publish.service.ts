@@ -298,3 +298,33 @@ export const connectDomain = async (data: any) => {
 
   return payload?.data;
 };
+
+export const issueSsl = async (websiteId: string) => {
+  const user = getCurrentUser();
+
+  if (!user?.id) {
+    throw new Error("Please log in before issuing SSL.");
+  }
+
+  const response = await fetch(
+    `${API_URL}/domain/ssl/${websiteId}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${user.token || ""}`,
+      },
+    }
+  );
+
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    if (response.status === 403) {
+      invalidateSession(payload?.message || "Session expired");
+    }
+
+    throw new Error(payload?.message || "Failed to issue SSL");
+  }
+
+  return payload?.data;
+};

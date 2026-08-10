@@ -70,6 +70,7 @@ const Domain = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [polling, setPolling] = useState(false);
 
   const providerInstructions = {
     godaddy: {
@@ -135,6 +136,39 @@ const Domain = () => {
     }
   };
 
+  // Poll domain status until verification and SSL are settled
+  const pollDomainStatus = async (websiteId: string) => {
+    if (!websiteId) return;
+
+    // avoid multiple concurrent pollers
+    if (polling) return;
+    setPolling(true);
+
+    try {
+      const intervalMs = 3000;
+      await new Promise<void>((resolve) => {
+        const iv = setInterval(async () => {
+          try {
+            const status = await getWebsiteDomain(websiteId);
+            setSelectedWebsiteDomain(status);
+
+            const verificationDone = status?.verificationStatus && status.verificationStatus !== "pending";
+            const sslSettled = !status?.sslStatus || (status.sslStatus !== "generating" && status.sslStatus !== "pending");
+
+            if (verificationDone && sslSettled) {
+              clearInterval(iv);
+              resolve();
+            }
+          } catch (err) {
+            // ignore errors, retry until settled
+          }
+        }, intervalMs);
+      });
+    } finally {
+      setPolling(false);
+    }
+  };
+
   useEffect(() => {
     void loadProjects();
   }, []);
@@ -163,7 +197,10 @@ const Domain = () => {
         dnsTarget: dnsTarget.trim() || "builder.buildhub.app",
       });
 
+      // trigger verification and then poll status (verification triggers SSL issuance on backend)
       await verifyDomain(selectedWebsiteId);
+      // start polling status until verification + SSL complete
+      void pollDomainStatus(selectedWebsiteId);
       await loadDomainDetails(selectedWebsiteId);
       await loadProjects();
 
@@ -190,11 +227,15 @@ const Domain = () => {
 
     try {
       const result = await verifyDomain(selectedWebsiteId);
+
+      // poll while backend issues SSL
+      void pollDomainStatus(selectedWebsiteId);
+
       await loadDomainDetails(selectedWebsiteId);
 
       setMessage(
         result?.verificationStatus === "verified"
-          ? "DNS verified successfully. Your domain is ready."
+          ? "DNS verified successfully. SSL issuance is in progress if enabled."
           : "DNS verification failed. Please check your records and try again."
       );
     } catch (err: any) {
