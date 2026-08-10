@@ -11,6 +11,7 @@ import NotificationSettings from "./components/NotificationSettings";
 import LocalizationSettings from "./components/LocalizationSettings";
 import BackupSettings from "./components/BackupSettings";
 import APISettings from "./components/APISettings";
+import AllowOriginsSettings from "./components/AllowOriginsSettings";
 import AuditLogSettings from "./components/AuditLogSettings";
 import SystemSettings from "./components/SystemSettings";
 import AdvancedSettings from "./components/AdvancedSettings";
@@ -44,6 +45,7 @@ const tabs = [
   { id: "localization", label: "Localization", icon: Globe },
   { id: "backup", label: "Backup", icon: Database },
   { id: "api", label: "API", icon: KeyRound },
+  { id: "allow-origins", label: "Allowed Origins", icon: KeyRound },
   { id: "audit", label: "Audit Logs", icon: FileText },
   { id: "system", label: "System", icon: Server },
   { id: "advanced", label: "Advanced", icon: SlidersHorizontal },
@@ -199,6 +201,8 @@ const SettingsPage = () => {
         return <BackupSettings settings={settings.backup} onChange={(value) => updateSection("backup", value)} />;
       case "api":
         return <APISettings settings={settings.api} onChange={(value) => updateSection("api", value)} />;
+      case "allow-origins":
+        return <AllowOriginsSettings />;
       case "audit":
         return <AuditLogSettings settings={settings.audit} onChange={(value) => updateSection("audit", value)} />;
       case "system":
