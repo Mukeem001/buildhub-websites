@@ -121,6 +121,9 @@ export const env = {
   certbotUseStaging:
     process.env.CERTBOT_USE_STAGING === "true",
 
+  certbotUseNginx:
+    process.env.CERTBOT_USE_NGINX === "true",
+
   nginxReloadCommand:
     process.env.NGINX_RELOAD_COMMAND ||
     "sudo systemctl reload nginx",

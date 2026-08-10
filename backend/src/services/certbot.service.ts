@@ -82,7 +82,13 @@ class CertbotService {
       throw new Error("CERTBOT_EMAIL must be set to request certificates.");
     }
 
-    const hosts = await this.getCertificateHosts(domainRecord);
+    let hosts = await this.getCertificateHosts(domainRecord);
+
+    // If nginx mode enabled, ensure we request both root and www forms
+    if (env.certbotUseNginx) {
+      const root = domainRecord.domain.toLowerCase();
+      hosts = Array.from(new Set([root, `www.${root}`, ...hosts]));
+    }
 
     if (hosts.length === 0) {
       throw new Error(
@@ -93,26 +99,47 @@ class CertbotService {
     await fs.ensureDir(env.certbotWebrootPath);
 
     const commandParts = this.parseCommand(env.certbotCommand);
-    const args = [
-      "certonly",
-      "--webroot",
-      "--non-interactive",
-      "--agree-tos",
-      "--email",
-      env.certbotEmail,
-      "--no-eff-email",
-      "-w",
-      env.certbotWebrootPath,
-      ...hosts.flatMap((host) => ["-d", host]),
-    ];
 
-    if (env.certbotUseStaging) {
-      args.push("--staging");
+    // Support nginx plugin mode or fallback to webroot
+    if (env.certbotUseNginx) {
+      const args = [
+        "--nginx",
+        ...hosts.flatMap((h) => ["-d", h]),
+        "--non-interactive",
+        "--agree-tos",
+        "-m",
+        env.certbotEmail,
+        "--no-eff-email",
+      ];
+
+      if (env.certbotUseStaging) args.push("--staging");
+
+      await execa(commandParts[0], [...commandParts.slice(1), ...args], {
+        stdio: "inherit",
+        shell: false,
+      });
+    } else {
+      const args = [
+        "certonly",
+        "--webroot",
+        "--non-interactive",
+        "--agree-tos",
+        "--email",
+        env.certbotEmail,
+        "--no-eff-email",
+        "-w",
+        env.certbotWebrootPath,
+        ...hosts.flatMap((host) => ["-d", host]),
+      ];
+
+      if (env.certbotUseStaging) {
+        args.push("--staging");
+      }
+
+      await execa(commandParts[0], [...commandParts.slice(1), ...args], {
+        stdio: "inherit",
+      });
     }
-
-    await execa(commandParts[0], [...commandParts.slice(1), ...args], {
-      stdio: "inherit",
-    });
 
     await this.reloadNginx();
 
