@@ -122,7 +122,7 @@ export const env = {
     process.env.CERTBOT_USE_STAGING === "true",
 
   certbotUseNginx:
-    process.env.CERTBOT_USE_NGINX === "true",
+    process.env.CERTBOT_USE_NGINX !== "false",
 
   nginxReloadCommand:
     process.env.NGINX_RELOAD_COMMAND ||

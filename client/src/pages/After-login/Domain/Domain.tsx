@@ -415,6 +415,32 @@ const selectedProject = projects.find((project) => project.id === selectedWebsit
                 </div>
               ) : null}
 
+              {selectedWebsiteDomain ? (
+                <div className="rounded-2xl border border-slate-700 bg-slate-950/80 p-4 text-sm text-slate-200">
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    <div>
+                      <p className="text-slate-400">DNS Status</p>
+                      <p className="mt-1 text-white">{formatStatus(selectedWebsiteDomain.verificationStatus)}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400">SSL Status</p>
+                      <p className="mt-1 text-white">{formatStatus(selectedWebsiteDomain.sslStatus)}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400">Domain</p>
+                      <p className="mt-1 text-white">{selectedWebsiteDomain.domain || "-"}</p>
+                    </div>
+                  </div>
+
+                  {selectedWebsiteDomain.sslError ? (
+                    <div className="mt-3 rounded-2xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+                      <p className="font-semibold">SSL error</p>
+                      <p>{selectedWebsiteDomain.sslError}</p>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
               <div className="grid gap-3 sm:grid-cols-3">
                 <button
                   type="submit"

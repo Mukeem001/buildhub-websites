@@ -110,6 +110,10 @@ class DomainService {
     let verified = false;
     let reason = "";
 
+    console.log(
+      `[DomainService] verifyDomain websiteId=${websiteId} host=${host} target=${target}`
+    );
+
     try {
       if (/^[0-9.]+$/.test(target)) {
         const addresses = await resolver.resolve4(
@@ -157,14 +161,25 @@ class DomainService {
       domainRecord.sslError = "";
       await domainRecord.save();
 
+      console.log(
+        `[DomainService] starting SSL issuance for websiteId=${websiteId} domain=${domainRecord.domain}`
+      );
+
       try {
         await certbotService.issueCertificate(domainRecord);
         domainRecord.sslStatus = "active";
         domainRecord.sslError = "";
+        console.log(
+          `[DomainService] SSL issuance succeeded for websiteId=${websiteId} domain=${domainRecord.domain}`
+        );
       } catch (error: any) {
         domainRecord.sslStatus = "failed";
         domainRecord.sslError =
           error?.message || String(error);
+        console.error(
+          `[DomainService] SSL issuance failed for websiteId=${websiteId} domain=${domainRecord.domain}:`,
+          error
+        );
       }
     }
 

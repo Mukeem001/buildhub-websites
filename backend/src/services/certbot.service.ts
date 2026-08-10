@@ -101,6 +101,10 @@ class CertbotService {
     const commandParts = this.parseCommand(env.certbotCommand);
 
     // Support nginx plugin mode or fallback to webroot
+    console.log(
+      `[Certbot] issuing certificate for ${hosts.join(", ")} using nginx=${env.certbotUseNginx}`
+    );
+
     if (env.certbotUseNginx) {
       const args = [
         "--nginx",
@@ -114,10 +118,15 @@ class CertbotService {
 
       if (env.certbotUseStaging) args.push("--staging");
 
-      await execa(commandParts[0], [...commandParts.slice(1), ...args], {
-        stdio: "inherit",
-        shell: false,
-      });
+      try {
+        await execa(commandParts[0], [...commandParts.slice(1), ...args], {
+          stdio: "inherit",
+          shell: false,
+        });
+      } catch (error: any) {
+        console.error("[Certbot] nginx issuance failed:", error);
+        throw error;
+      }
     } else {
       const args = [
         "certonly",
@@ -136,10 +145,17 @@ class CertbotService {
         args.push("--staging");
       }
 
-      await execa(commandParts[0], [...commandParts.slice(1), ...args], {
-        stdio: "inherit",
-      });
+      try {
+        await execa(commandParts[0], [...commandParts.slice(1), ...args], {
+          stdio: "inherit",
+        });
+      } catch (error: any) {
+        console.error("[Certbot] webroot issuance failed:", error);
+        throw error;
+      }
     }
+
+    console.log("[Certbot] certificate issuance completed successfully");
 
     await this.reloadNginx();
 
