@@ -105,6 +105,26 @@ export const env = {
       }
     })(),
 
+  certbotEnabled:
+    process.env.CERTBOT_ENABLED === "true",
+
+  certbotEmail:
+    process.env.CERTBOT_EMAIL || "",
+
+  certbotWebrootPath:
+    process.env.CERTBOT_WEBROOT_PATH ||
+    "/var/www/buildhub-websites/certbot",
+
+  certbotCommand:
+    process.env.CERTBOT_COMMAND || "certbot",
+
+  certbotUseStaging:
+    process.env.CERTBOT_USE_STAGING === "true",
+
+  nginxReloadCommand:
+    process.env.NGINX_RELOAD_COMMAND ||
+    "sudo systemctl reload nginx",
+
   admin: {
     email:
       process.env.ADMIN_EMAIL,

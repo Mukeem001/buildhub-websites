@@ -20,6 +20,15 @@ export const connectDomain = async (req: Request, res: Response) => {
   }
 };
 
+export const listDomains = async (req: Request, res: Response) => {
+  try {
+    const data = await domainService.getAllDomains();
+    return res.json({ success: true, data });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export const getDomain = async (req: Request, res: Response) => {
   try {
     const websiteId = Array.isArray(req.params.websiteId) ? req.params.websiteId[0] : req.params.websiteId;
@@ -28,6 +37,16 @@ export const getDomain = async (req: Request, res: Response) => {
     return res.json({ success: true, data });
   } catch (error: any) {
     return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const issueSsl = async (req: Request, res: Response) => {
+  try {
+    const websiteId = Array.isArray(req.params.websiteId) ? req.params.websiteId[0] : req.params.websiteId;
+    const data = await domainService.issueSsl(websiteId);
+    return res.json({ success: true, message: "SSL issuance triggered.", data });
+  } catch (error: any) {
+    return res.status(400).json({ success: false, message: error.message });
   }
 };
 

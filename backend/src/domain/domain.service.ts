@@ -2,6 +2,7 @@ import dns from "dns";
 import Domain from "./domain.model";
 import Website from "../models/Website";
 import env from "../config/env";
+import certbotService from "../services/certbot.service";
 
 const resolver = dns.promises;
 
@@ -150,6 +151,23 @@ class DomainService {
 
     domainRecord.verificationStatus =
       verified ? "verified" : "failed";
+
+    if (verified && env.certbotEnabled) {
+      domainRecord.sslStatus = "generating";
+      domainRecord.sslError = "";
+      await domainRecord.save();
+
+      try {
+        await certbotService.issueCertificate(domainRecord);
+        domainRecord.sslStatus = "active";
+        domainRecord.sslError = "";
+      } catch (error: any) {
+        domainRecord.sslStatus = "failed";
+        domainRecord.sslError =
+          error?.message || String(error);
+      }
+    }
+
     await domainRecord.save();
 
     return {
@@ -157,6 +175,61 @@ class DomainService {
       verified,
       reason,
     };
+  }
+
+  // ==========================
+  // List all connected domains
+  // ==========================
+
+  async getAllDomains() {
+    return await Domain.find().lean();
+  }
+
+  // ==========================
+  // Issue SSL for verified domain
+  // ==========================
+
+  async issueSsl(
+    websiteId: string
+  ) {
+    const domainRecord = await Domain.findOne({
+      websiteId,
+    });
+
+    if (!domainRecord) {
+      throw new Error(
+        "No connected domain found for this website."
+      );
+    }
+
+    if (domainRecord.verificationStatus !== "verified") {
+      throw new Error(
+        "Domain DNS must be verified before issuing SSL."
+      );
+    }
+
+    if (!env.certbotEnabled) {
+      throw new Error(
+        "SSL issuance is disabled. Enable CERTBOT_ENABLED=true in your environment."
+      );
+    }
+
+    domainRecord.sslStatus = "generating";
+    domainRecord.sslError = "";
+    await domainRecord.save();
+
+    try {
+      await certbotService.issueCertificate(domainRecord);
+      domainRecord.sslStatus = "active";
+      domainRecord.sslError = "";
+    } catch (error: any) {
+      domainRecord.sslStatus = "failed";
+      domainRecord.sslError =
+        error?.message || String(error);
+    }
+
+    await domainRecord.save();
+    return domainRecord;
   }
 
   // ==========================

@@ -21,7 +21,10 @@ export interface IDomain extends Document {
   sslStatus:
     | "pending"
     | "generating"
-    | "active";
+    | "active"
+    | "failed";
+
+  sslError?: string;
 }
 
 const DomainSchema = new Schema(
@@ -81,8 +84,14 @@ const DomainSchema = new Schema(
         "pending",
         "generating",
         "active",
+        "failed",
       ],
       default: "pending",
+    },
+
+    sslError: {
+      type: String,
+      default: "",
     },
   },
   {

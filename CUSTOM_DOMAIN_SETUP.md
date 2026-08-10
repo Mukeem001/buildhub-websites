@@ -152,7 +152,62 @@ If the user wants the root domain `developermukeem.online`:
 - optionally `CNAME` record: `www` -> `developermukeem.online`
 
 ---
+## Automatic SSL issuance with Certbot
 
+To support scalable custom domains without editing Nginx for every domain, use one catch-all proxy server block and Certbot webroot mode.
+
+1. Install Certbot on Ubuntu:
+
+```bash
+sudo apt update
+sudo apt install certbot python3-certbot-nginx
+```
+
+2. Configure Nginx to proxy all non-API requests to Node and serve ACME challenges from the static webroot.
+
+Example `/etc/nginx/sites-available/buildhub`:
+
+```nginx
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
+
+    root /var/www/buildhub-websites/certbot;
+
+    location /.well-known/acme-challenge/ {
+        alias /var/www/buildhub-websites/certbot/.well-known/acme-challenge/;
+        try_files $uri =404;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+    }
+}
+```
+
+3. Enable automatic SSL in the backend `.env`:
+
+```env
+CERTBOT_ENABLED=true
+CERTBOT_EMAIL=your-email@example.com
+CERTBOT_WEBROOT_PATH=/var/www/buildhub-websites/certbot
+CERTBOT_COMMAND=certbot
+NGINX_RELOAD_COMMAND=sudo systemctl reload nginx
+```
+
+4. Connect the custom domain normally and then verify it from the backend or frontend. Once DNS verification succeeds, the backend will trigger Certbot to request certificates for the verified hostname(s) and reload Nginx automatically.
+
+5. If the certificate issuance fails, the backend stores the error in `Domain.sslError` and sets `sslStatus=failed`. You can inspect or re-trigger issuance later using the backend SSL endpoint.
+
+---
 ## Final check
 
 After updating nginx, reload and test:
