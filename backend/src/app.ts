@@ -125,40 +125,67 @@ app.use(
 
       // Check database allowlist collection for explicit allowed origins.
       const allowlistCandidates = [origin.toLowerCase(), originHost, originHost.replace(/^www\./, "")];
-      try {
-        const allowed = await AllowOrigin.findOne({ origin: { $in: allowlistCandidates } }).lean();
-        if (allowed) {
-          callback(null, true);
-          return;
-        }
-      } catch (err) {
-        console.error("AllowOrigin lookup failed:", err);
-        // continue to domain lookup as fallback
-      }
 
-      const hostnamesToTry = [originHost];
-      if (originHost.startsWith("www.")) {
-        hostnamesToTry.push(originHost.replace(/^www\./, ""));
-      } else {
-        hostnamesToTry.push(`www.${originHost}`);
-      }
-
-      Domain.findOne({
-        $or: [
-          ...hostnamesToTry.map((host) => ({ hostname: host })),
-          { domain: originHost },
-        ],
-      })
-        .then((domain) => {
-          if (domain) {
+      AllowOrigin.findOne({ origin: { $in: allowlistCandidates } })
+        .lean()
+        .then((allowed) => {
+          if (allowed) {
             callback(null, true);
-          } else {
-            callback(new Error("CORS origin denied"));
+            return;
           }
+
+          const hostnamesToTry = [originHost];
+          if (originHost.startsWith("www.")) {
+            hostnamesToTry.push(originHost.replace(/^www\./, ""));
+          } else {
+            hostnamesToTry.push(`www.${originHost}`);
+          }
+
+          Domain.findOne({
+            $or: [
+              ...hostnamesToTry.map((host) => ({ hostname: host })),
+              { domain: originHost },
+            ],
+          })
+            .then((domain) => {
+              if (domain) {
+                callback(null, true);
+              } else {
+                callback(new Error("CORS origin denied"));
+              }
+            })
+            .catch((error) => {
+              console.error("CORS origin lookup failed:", error);
+              callback(new Error("CORS origin denied"));
+            });
         })
-        .catch((error) => {
-          console.error("CORS origin lookup failed:", error);
-          callback(new Error("CORS origin denied"));
+        .catch((err) => {
+          console.error("AllowOrigin lookup failed:", err);
+          // fallback to domain lookup
+          const hostnamesToTry = [originHost];
+          if (originHost.startsWith("www.")) {
+            hostnamesToTry.push(originHost.replace(/^www\./, ""));
+          } else {
+            hostnamesToTry.push(`www.${originHost}`);
+          }
+
+          Domain.findOne({
+            $or: [
+              ...hostnamesToTry.map((host) => ({ hostname: host })),
+              { domain: originHost },
+            ],
+          })
+            .then((domain) => {
+              if (domain) {
+                callback(null, true);
+              } else {
+                callback(new Error("CORS origin denied"));
+              }
+            })
+            .catch((error) => {
+              console.error("CORS origin lookup failed:", error);
+              callback(new Error("CORS origin denied"));
+            });
         });
     },
     credentials: true,
