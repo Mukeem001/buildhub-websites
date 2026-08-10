@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 
 import { fetchProjects } from "@/services/project.service";
@@ -70,7 +70,7 @@ const Domain = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [polling, setPolling] = useState(false);
+  const pollingRef = useRef(false);
 
   const providerInstructions = {
     godaddy: {
@@ -141,13 +141,18 @@ const Domain = () => {
     if (!websiteId) return;
 
     // avoid multiple concurrent pollers
-    if (polling) return;
-    setPolling(true);
+    if (pollingRef.current) return;
+    pollingRef.current = true;
 
     try {
       const intervalMs = 3000;
+      const maxAttempts = 40; // ~2 minutes
+      let attempts = 0;
+
       await new Promise<void>((resolve) => {
         const iv = setInterval(async () => {
+          attempts += 1;
+
           try {
             const status = await getWebsiteDomain(websiteId);
             setSelectedWebsiteDomain(status);
@@ -158,14 +163,25 @@ const Domain = () => {
             if (verificationDone && sslSettled) {
               clearInterval(iv);
               resolve();
+              return;
+            }
+
+            if (attempts >= maxAttempts) {
+              clearInterval(iv);
+              resolve();
+              return;
             }
           } catch (err) {
-            // ignore errors, retry until settled
+            // ignore errors, but stop after max attempts
+            if (attempts >= maxAttempts) {
+              clearInterval(iv);
+              resolve();
+            }
           }
         }, intervalMs);
       });
     } finally {
-      setPolling(false);
+      pollingRef.current = false;
     }
   };
 
