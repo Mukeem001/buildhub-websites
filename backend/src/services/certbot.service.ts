@@ -71,6 +71,12 @@ class CertbotService {
       .filter(Boolean);
   }
 
+  private stringifyCertbotError(error: any): string {
+    const message = error?.message || String(error);
+    const stderr = error?.stderr || error?.stdout || "";
+    return [message, stderr].filter(Boolean).join(" | ");
+  }
+
   public async issueCertificate(
     domainRecord: IDomain
   ): Promise<string[]> {
@@ -105,6 +111,9 @@ class CertbotService {
       `[Certbot] issuing certificate for ${hosts.join(", ")} using nginx=${env.certbotUseNginx}`
     );
 
+    let nginxError: string | null = null;
+    let issued = false;
+
     if (env.certbotUseNginx) {
       const args = [
         "--nginx",
@@ -123,11 +132,14 @@ class CertbotService {
           stdio: "inherit",
           shell: false,
         });
+        issued = true;
       } catch (error: any) {
-        console.error("[Certbot] nginx issuance failed:", error);
-        throw error;
+        nginxError = this.stringifyCertbotError(error);
+        console.error("[Certbot] nginx issuance failed:", nginxError);
       }
-    } else {
+    }
+
+    if (!issued) {
       const args = [
         "certonly",
         "--webroot",
@@ -149,8 +161,17 @@ class CertbotService {
         await execa(commandParts[0], [...commandParts.slice(1), ...args], {
           stdio: "inherit",
         });
+        issued = true;
       } catch (error: any) {
-        console.error("[Certbot] webroot issuance failed:", error);
+        const webrootError = this.stringifyCertbotError(error);
+        console.error("[Certbot] webroot issuance failed:", webrootError);
+
+        if (nginxError && env.certbotUseNginx && env.certbotFallbackToWebroot) {
+          throw new Error(
+            `Nginx issuance failed: ${nginxError} | Webroot issuance failed: ${webrootError}`
+          );
+        }
+
         throw error;
       }
     }
