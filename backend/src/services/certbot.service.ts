@@ -73,8 +73,10 @@ class CertbotService {
 
   private stringifyCertbotError(error: any): string {
     const message = error?.message || String(error);
-    const stderr = error?.stderr || error?.stdout || "";
-    return [message, stderr].filter(Boolean).join(" | ");
+    const stderr = error?.stderr || "";
+    const stdout = error?.stdout || "";
+    const details = [stderr, stdout].filter(Boolean).join("\n");
+    return [message, details].filter(Boolean).join(" | ");
   }
 
   public async issueCertificate(
@@ -129,7 +131,7 @@ class CertbotService {
 
       try {
         await execa(commandParts[0], [...commandParts.slice(1), ...args], {
-          stdio: "inherit",
+          stdio: ["ignore", "pipe", "pipe"],
           shell: false,
         });
         issued = true;
@@ -159,7 +161,7 @@ class CertbotService {
 
       try {
         await execa(commandParts[0], [...commandParts.slice(1), ...args], {
-          stdio: "inherit",
+          stdio: ["ignore", "pipe", "pipe"],
         });
         issued = true;
       } catch (error: any) {

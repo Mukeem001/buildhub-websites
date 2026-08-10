@@ -200,6 +200,8 @@ CERTBOT_ENABLED=true
 CERTBOT_EMAIL=your-email@example.com
 CERTBOT_WEBROOT_PATH=/var/www/buildhub-websites/certbot
 CERTBOT_COMMAND=certbot
+CERTBOT_USE_NGINX=false
+CERTBOT_FALLBACK_TO_WEBROOT=true
 NGINX_RELOAD_COMMAND=sudo systemctl reload nginx
 ```
 
