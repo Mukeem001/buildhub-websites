@@ -93,11 +93,9 @@ class CertbotService {
 
     let hosts = await this.getCertificateHosts(domainRecord);
 
-    // If nginx mode enabled, ensure we request both root and www forms
-    if (env.certbotUseNginx) {
-      const root = domainRecord.domain.toLowerCase();
-      hosts = Array.from(new Set([root, `www.${root}`, ...hosts]));
-    }
+    // Ensure we request both root and www forms so certificate covers both
+    const root = domainRecord.domain.toLowerCase();
+    hosts = Array.from(new Set([root, `www.${root}`, ...hosts]));
 
     if (hosts.length === 0) {
       throw new Error(
@@ -236,6 +234,24 @@ class CertbotService {
     }
   }
 
+  private async writeFileAsRoot(tempPath: string, destPath: string, content: string): Promise<void> {
+    // write locally to tempPath then move to destPath using sudo so root owns the file
+    await fs.writeFile(tempPath, content, { encoding: "utf8" });
+
+    // move into place with sudo and set ownership
+    try {
+      await execaCommand(`sudo -n mv ${tempPath} ${destPath}`, { shell: true });
+      await execaCommand(`sudo -n chown root:root ${destPath}`, { shell: true });
+      await execaCommand(`sudo -n chmod 644 ${destPath}`, { shell: true });
+    } catch (err: any) {
+      // cleanup and rethrow
+      try {
+        await fs.remove(tempPath);
+      } catch {}
+      throw err;
+    }
+  }
+
   private async ensureNginxHttpSite(domainRecord: IDomain, hosts: string[]): Promise<void> {
     const primary = hosts[0];
     const filename = `${primary}.conf`;
@@ -271,16 +287,15 @@ class CertbotService {
 `;
 
     await fs.ensureDir(path.dirname(destPath));
-    await fs.writeFile(destPath, conf, { encoding: "utf8" });
+    const tmp = path.join(env.certbotWebrootPath, `${filename}.tmp`);
+    await this.writeFileAsRoot(tmp, destPath, conf);
 
-    // create symlink in sites-enabled if missing
+    // create symlink in sites-enabled if missing (use sudo)
     try {
-      const exists = await fs.pathExists(enabledPath);
-      if (!exists) {
-        await fs.ensureSymlink(destPath, enabledPath);
-      }
+      const exists = await execaCommand(`test -L ${enabledPath} || echo missing`, { shell: true });
+      // create or replace symlink
+      await execaCommand(`sudo -n ln -sf ${destPath} ${enabledPath}`, { shell: true });
     } catch (err) {
-      // not fatal; log and continue
       console.error("[Certbot] failed to create symlink for nginx site:", err);
     }
   }
@@ -325,14 +340,11 @@ server {
 `;
 
     await fs.ensureDir(path.dirname(destPath));
-    await fs.writeFile(destPath, conf, { encoding: "utf8" });
+    const tmp = path.join(env.certbotWebrootPath, `${filename}.tmp`);
+    await this.writeFileAsRoot(tmp, destPath, conf);
 
-    // ensure symlink
     try {
-      const exists = await fs.pathExists(enabledPath);
-      if (!exists) {
-        await fs.ensureSymlink(destPath, enabledPath);
-      }
+      await execaCommand(`sudo -n ln -sf ${destPath} ${enabledPath}`, { shell: true });
     } catch (err) {
       console.error("[Certbot] failed to create symlink for ssl nginx site:", err);
     }
