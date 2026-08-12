@@ -54,6 +54,7 @@ type DomainRecord = {
   cnameHost?: string;
   cnameTarget?: string;
   verificationStatus?: string;
+  verificationReason?: string;
   sslStatus?: string;
   sslError?: string;
   createdAt?: string;
@@ -437,6 +438,13 @@ const selectedProject = projects.find((project) => project.id === selectedWebsit
                     <div className="mt-3 rounded-2xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
                       <p className="font-semibold">SSL error</p>
                       <p>{selectedWebsiteDomain.sslError}</p>
+                    </div>
+                  ) : null}
+
+                  {selectedWebsiteDomain?.verificationStatus === "failed" && selectedWebsiteDomain?.verificationReason ? (
+                    <div className="mt-3 rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-3 text-sm text-yellow-200">
+                      <p className="font-semibold">DNS verification details</p>
+                      <pre className="mt-2 whitespace-pre-wrap text-xs text-yellow-100">{selectedWebsiteDomain.verificationReason}</pre>
                     </div>
                   ) : null}
                 </div>

@@ -18,6 +18,8 @@ export interface IDomain extends Document {
     | "verified"
     | "failed";
 
+  verificationReason?: string;
+
   sslStatus:
     | "pending"
     | "generating"
@@ -77,6 +79,11 @@ const DomainSchema = new Schema(
       ],
       default: "pending",
     },
+
+      verificationReason: {
+        type: String,
+        default: "",
+      },
 
     sslStatus: {
       type: String,

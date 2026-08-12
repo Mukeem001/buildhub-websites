@@ -155,6 +155,8 @@ class DomainService {
 
     domainRecord.verificationStatus =
       verified ? "verified" : "failed";
+    // persist the reason (dns error or resolver message) for frontend debugging
+    domainRecord.verificationReason = reason || (verified ? "" : "DNS records did not resolve to the expected target");
 
     if (verified && env.certbotEnabled) {
       domainRecord.sslStatus = "generating";
@@ -183,7 +185,7 @@ class DomainService {
       }
     }
 
-    await domainRecord.save();
+      await domainRecord.save();
 
     return {
       ...domainRecord.toObject(),
