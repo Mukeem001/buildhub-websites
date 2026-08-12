@@ -21,7 +21,7 @@ interface DomainsTableProps {
     React.SetStateAction<Array<string | number>>
   >;
 
-  onViewDomain: () => void;
+  onViewDomain: (domain: Domain) => void;
   onEditDomain: () => void;
   onDeleteDomain: () => void;
 }
@@ -367,7 +367,7 @@ const DomainsTable = ({
                   <div className="flex justify-end gap-2">
 
                     <button
-                      onClick={onViewDomain}
+                      onClick={() => onViewDomain(domain)}
                       className="rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
                     >
                       <Eye size={17} />

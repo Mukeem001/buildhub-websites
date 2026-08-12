@@ -15,6 +15,7 @@ const DomainsPage = () => {
   // Modal States
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [openDrawer, setOpenDrawer] = useState(false);
+  const [viewingDomain, setViewingDomain] = useState<DomainPayload | null>(null);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
 
   // Filters
@@ -114,7 +115,12 @@ const DomainsPage = () => {
           sortBy={sortBy}
           selectedIds={selectedIds}
           setSelectedIds={setSelectedIds}
-          onViewDomain={() => setOpenDrawer(true)}
+          onViewDomain={(d) => {
+            // map back to full payload if possible
+            const payload = domainList.find((x) => x._id === d.id || x.domain === d.domain) || null;
+            setViewingDomain(payload);
+            setOpenDrawer(true);
+          }}
           onEditDomain={() => setOpenCreateModal(true)}
           onDeleteDomain={() => setOpenDeleteDialog(true)}
         />
@@ -130,6 +136,7 @@ const DomainsPage = () => {
       <DomainDrawer
         open={openDrawer}
         onClose={() => setOpenDrawer(false)}
+        domain={viewingDomain}
       />
 
       {loading && (

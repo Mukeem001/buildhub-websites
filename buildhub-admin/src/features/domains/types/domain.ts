@@ -12,6 +12,7 @@ export interface Domain {
   expiryDate: string;
 
   ssl: "Active" | "Expired";
+  sslError?: string;
 
   status:
     | "Connected"

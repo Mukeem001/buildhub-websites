@@ -11,11 +11,13 @@ import {
 interface DomainDrawerProps {
   open: boolean;
   onClose: () => void;
+  domain?: any;
 }
 
 const DomainDrawer = ({
   open,
   onClose,
+  domain,
 }: DomainDrawerProps) => {
   if (!open) return null;
 
@@ -84,7 +86,7 @@ const DomainDrawer = ({
                 </p>
 
                 <h3 className="text-lg font-semibold text-white">
-                  buildhub.com
+                  {domain?.domain || "-"}
                 </h3>
 
               </div>
@@ -112,19 +114,19 @@ const DomainDrawer = ({
             <InfoCard
               icon={<Server className="h-5 w-5 text-cyan-400" />}
               title="Registrar"
-              value="Cloudflare"
+              value={domain?.cnameTarget || "-"}
             />
 
             <InfoCard
               icon={<Shield className="h-5 w-5 text-green-400" />}
               title="SSL Status"
-              value="Active"
+              value={domain?.sslStatus ? domain.sslStatus.charAt(0).toUpperCase() + domain.sslStatus.slice(1) : "-"}
             />
 
             <InfoCard
               icon={<Globe className="h-5 w-5 text-green-400" />}
               title="Connection"
-              value="Connected"
+              value={domain?.verificationStatus ? (domain.verificationStatus === "verified" ? "Connected" : domain.verificationStatus) : "-"}
             />
 
             <InfoCard
@@ -140,6 +142,13 @@ const DomainDrawer = ({
             />
 
           </div>
+
+          {domain?.sslError ? (
+            <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-200">
+              <p className="font-semibold">SSL Error</p>
+              <pre className="mt-2 whitespace-pre-wrap text-xs text-red-100">{domain.sslError}</pre>
+            </div>
+          ) : null}
 
         </div>
 
