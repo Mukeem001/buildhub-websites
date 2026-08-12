@@ -1,6 +1,7 @@
 import dns from "dns";
 import fs from "fs-extra";
-import { execa } from "execa";
+import path from "path";
+import { execa, execaCommand } from "execa";
 import env from "../config/env";
 import { IDomain } from "../domain/domain.model";
 
@@ -106,6 +107,15 @@ class CertbotService {
 
     await fs.ensureDir(env.certbotWebrootPath);
 
+    // Ensure an nginx HTTP site exists to serve the ACME challenge
+    try {
+      await this.ensureNginxHttpSite(domainRecord, hosts);
+      await this.testAndReloadNginx();
+    } catch (err: any) {
+      console.error("[Certbot] failed to prepare nginx for webroot challenges:", err);
+      // continue — certbot webroot will likely fail but surface a clearer error
+    }
+
     const commandParts = this.parseCommand(env.certbotCommand);
 
     // Support nginx plugin mode or fallback to webroot
@@ -164,6 +174,13 @@ class CertbotService {
           stdio: ["ignore", "pipe", "pipe"],
         });
         issued = true;
+        // After successful webroot issuance, write HTTPS site config
+        try {
+          await this.ensureNginxSslSite(domainRecord, hosts);
+          await this.testAndReloadNginx();
+        } catch (err: any) {
+          console.error("[Certbot] warning: ssl site write/reload failed:", err);
+        }
       } catch (error: any) {
         const webrootError = this.stringifyCertbotError(error);
         console.error("[Certbot] webroot issuance failed:", webrootError);
@@ -186,14 +203,139 @@ class CertbotService {
   }
 
   private async reloadNginx(): Promise<void> {
+    // kept for backward compatibility
+    await this.testAndReloadNginx();
+  }
+
+  private async testAndReloadNginx(): Promise<void> {
+    if (!env.nginxTestCommand) {
+      throw new Error("NGINX test command is not configured");
+    }
+
+    console.log("[Certbot] testing nginx configuration...");
+    try {
+      await execaCommand(env.nginxTestCommand, { shell: true });
+    } catch (err: any) {
+      const out = this.stringifyCertbotError(err);
+      console.error("[Certbot] nginx test failed:", out);
+      throw new Error(`nginx test failed: ${out}`);
+    }
+
     if (!env.nginxReloadCommand) {
+      console.log("[Certbot] nginx reload command not configured; skipping reload");
       return;
     }
 
-    await execa(env.nginxReloadCommand, {
-      shell: true,
-      stdio: "inherit",
-    });
+    console.log("[Certbot] reloading nginx...");
+    try {
+      await execaCommand(env.nginxReloadCommand, { shell: true });
+    } catch (err: any) {
+      const out = this.stringifyCertbotError(err);
+      console.error("[Certbot] nginx reload failed:", out);
+      throw new Error(`nginx reload failed: ${out}`);
+    }
+  }
+
+  private async ensureNginxHttpSite(domainRecord: IDomain, hosts: string[]): Promise<void> {
+    const primary = hosts[0];
+    const filename = `${primary}.conf`;
+    const sitesAvailable = env.nginxSitesAvailablePath;
+    const sitesEnabled = env.nginxSitesEnabledPath;
+    const destPath = path.join(sitesAvailable, filename);
+    const enabledPath = path.join(sitesEnabled, filename);
+
+    const serverNames = hosts.join(" ");
+
+    const conf = `server {
+    listen 80;
+    server_name ${serverNames};
+
+    root ${env.certbotWebrootPath};
+
+    location /.well-known/acme-challenge/ {
+        alias ${path.join(env.certbotWebrootPath, ".well-known/acme-challenge")}/;
+        try_files $uri =404;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:${env.port};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+    }
+}
+`;
+
+    await fs.ensureDir(path.dirname(destPath));
+    await fs.writeFile(destPath, conf, { encoding: "utf8" });
+
+    // create symlink in sites-enabled if missing
+    try {
+      const exists = await fs.pathExists(enabledPath);
+      if (!exists) {
+        await fs.ensureSymlink(destPath, enabledPath);
+      }
+    } catch (err) {
+      // not fatal; log and continue
+      console.error("[Certbot] failed to create symlink for nginx site:", err);
+    }
+  }
+
+  private async ensureNginxSslSite(domainRecord: IDomain, hosts: string[]): Promise<void> {
+    const primary = hosts[0];
+    const filename = `${primary}.conf`;
+    const sitesAvailable = env.nginxSitesAvailablePath;
+    const sitesEnabled = env.nginxSitesEnabledPath;
+    const destPath = path.join(sitesAvailable, filename);
+    const enabledPath = path.join(sitesEnabled, filename);
+
+    const serverNames = hosts.join(" ");
+
+    const certPath = `/etc/letsencrypt/live/${primary}/fullchain.pem`;
+    const keyPath = `/etc/letsencrypt/live/${primary}/privkey.pem`;
+
+    const conf = `server {
+    listen 80;
+    server_name ${serverNames};
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name ${serverNames};
+
+    ssl_certificate ${certPath};
+    ssl_certificate_key ${keyPath};
+
+    location / {
+        proxy_pass http://127.0.0.1:${env.port};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+    }
+}
+`;
+
+    await fs.ensureDir(path.dirname(destPath));
+    await fs.writeFile(destPath, conf, { encoding: "utf8" });
+
+    // ensure symlink
+    try {
+      const exists = await fs.pathExists(enabledPath);
+      if (!exists) {
+        await fs.ensureSymlink(destPath, enabledPath);
+      }
+    } catch (err) {
+      console.error("[Certbot] failed to create symlink for ssl nginx site:", err);
+    }
   }
 }
 

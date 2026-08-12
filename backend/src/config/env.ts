@@ -129,7 +129,19 @@ export const env = {
 
   nginxReloadCommand:
     process.env.NGINX_RELOAD_COMMAND ||
-    "sudo systemctl reload nginx",
+    "sudo -n /usr/bin/systemctl reload nginx",
+
+  nginxTestCommand:
+    process.env.NGINX_TEST_COMMAND ||
+    "sudo -n /usr/sbin/nginx -t",
+
+  nginxSitesAvailablePath:
+    process.env.NGINX_SITES_AVAILABLE_PATH ||
+    "/etc/nginx/sites-available",
+
+  nginxSitesEnabledPath:
+    process.env.NGINX_SITES_ENABLED_PATH ||
+    "/etc/nginx/sites-enabled",
 
   admin: {
     email:
