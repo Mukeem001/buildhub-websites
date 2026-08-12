@@ -80,6 +80,20 @@ class CertbotService {
     return [message, details].filter(Boolean).join(" | ");
   }
 
+  private getCertbotDirArgs(): string[] {
+    const args: string[] = [];
+    if (env.certbotConfigDir) {
+      args.push("--config-dir", env.certbotConfigDir);
+    }
+    if (env.certbotWorkDir) {
+      args.push("--work-dir", env.certbotWorkDir);
+    }
+    if (env.certbotLogsDir) {
+      args.push("--logs-dir", env.certbotLogsDir);
+    }
+    return args;
+  }
+
   public async issueCertificate(
     domainRecord: IDomain
   ): Promise<string[]> {
@@ -135,6 +149,7 @@ class CertbotService {
         "-m",
         env.certbotEmail,
         "--no-eff-email",
+        ...this.getCertbotDirArgs(),
       ];
 
       if (env.certbotUseStaging) args.push("--staging");
@@ -163,6 +178,7 @@ class CertbotService {
         "-w",
         env.certbotWebrootPath,
         ...hosts.flatMap((host) => ["-d", host]),
+        ...this.getCertbotDirArgs(),
       ];
 
       if (env.certbotUseStaging) {

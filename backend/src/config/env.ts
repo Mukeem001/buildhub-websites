@@ -127,6 +127,15 @@ export const env = {
   certbotFallbackToWebroot:
     process.env.CERTBOT_FALLBACK_TO_WEBROOT !== "false",
 
+  certbotConfigDir:
+    process.env.CERTBOT_CONFIG_DIR || "",
+
+  certbotWorkDir:
+    process.env.CERTBOT_WORK_DIR || "",
+
+  certbotLogsDir:
+    process.env.CERTBOT_LOGS_DIR || "",
+
   nginxReloadCommand:
     process.env.NGINX_RELOAD_COMMAND ||
     "sudo -n /usr/bin/systemctl reload nginx",
