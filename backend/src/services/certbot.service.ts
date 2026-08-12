@@ -93,9 +93,11 @@ class CertbotService {
 
     let hosts = await this.getCertificateHosts(domainRecord);
 
-    // Ensure we request both root and www forms so certificate covers both
-    const root = domainRecord.domain.toLowerCase();
-    hosts = Array.from(new Set([root, `www.${root}`, ...hosts]));
+    // If nginx plugin mode is enabled, ensure we request both root and www forms
+    if (env.certbotUseNginx) {
+      const root = domainRecord.domain.toLowerCase();
+      hosts = Array.from(new Set([root, `www.${root}`, ...hosts]));
+    }
 
     if (hosts.length === 0) {
       throw new Error(
