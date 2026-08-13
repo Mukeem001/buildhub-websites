@@ -8,55 +8,97 @@ import { IDomain } from "../domain/domain.model";
 const resolver = dns.promises;
 
 class CertbotService {
+  /**
+   * Check whether a hostname resolves to the configured server target.
+   *
+   * Supports:
+   * - A record -> IP
+   * - CNAME -> hostname
+   * - CNAME/A fallback
+   */
   private async isHostResolvedToTarget(
     host: string,
     target: string
   ): Promise<boolean> {
     try {
+      host = host.toLowerCase().replace(/\.$/, "");
+      target = target.toLowerCase().replace(/\.$/, "");
+
+      // Target is an IPv4 address
       if (/^[0-9.]+$/.test(target)) {
         const addresses = await resolver.resolve4(host);
+
         return addresses.includes(target);
       }
 
+      // Try CNAME first
       try {
         const cnames = await resolver.resolveCname(host);
-        const resolved = cnames.some(
-          (cname) =>
-            cname.toLowerCase() === target.toLowerCase() ||
-            cname.toLowerCase().endsWith(target.toLowerCase())
-        );
+
+        const resolved = cnames.some((cname) => {
+          const normalized = cname.toLowerCase().replace(/\.$/, "");
+
+          return (
+            normalized === target ||
+            normalized.endsWith(`.${target}`)
+          );
+        });
 
         if (resolved) {
           return true;
         }
       } catch {
-        // Ignore CNAME failures and fall back to A record comparison.
+        // Ignore CNAME failures.
       }
 
+      // Fallback to A record comparison
       const hostA = await resolver.resolve4(host);
       const targetA = await resolver.resolve4(target);
+
       return hostA.some((ip) => targetA.includes(ip));
     } catch {
       return false;
     }
   }
 
+  /**
+   * Get all hostnames that should be included in the certificate.
+   */
   private async getCertificateHosts(
     domainRecord: IDomain
   ): Promise<string[]> {
-    const rootDomain = domainRecord.domain.toLowerCase();
-    const hostname = domainRecord.hostname.toLowerCase();
+    const rootDomain = domainRecord.domain
+      .toLowerCase()
+      .replace(/\.$/, "");
+
+    const hostname = domainRecord.hostname
+      .toLowerCase()
+      .replace(/\.$/, "");
+
     const target =
       domainRecord.cnameTarget || env.customDomainTarget;
 
-    const hosts = new Set<string>([hostname]);
+    const hosts = new Set<string>();
 
+    hosts.add(hostname);
+
+    /**
+     * If root domain is connected,
+     * also include www if it points to the server.
+     */
     if (hostname === rootDomain) {
       const wwwHost = `www.${rootDomain}`;
+
       if (await this.isHostResolvedToTarget(wwwHost, target)) {
         hosts.add(wwwHost);
       }
-    } else if (hostname === `www.${rootDomain}`) {
+    }
+
+    /**
+     * If www is connected,
+     * also include root domain if it points to the server.
+     */
+    if (hostname === `www.${rootDomain}`) {
       if (await this.isHostResolvedToTarget(rootDomain, target)) {
         hosts.add(rootDomain);
       }
@@ -65,53 +107,113 @@ class CertbotService {
     return Array.from(hosts);
   }
 
+  /**
+   * Convert command string to executable + arguments.
+   *
+   * Example:
+   * "sudo -n /usr/bin/certbot"
+   *
+   * becomes:
+   * ["sudo", "-n", "/usr/bin/certbot"]
+   */
   private parseCommand(command: string): string[] {
     return command
       .trim()
-      .split(" ")
+      .split(/\s+/)
       .filter(Boolean);
   }
 
+  /**
+   * Convert execa error into readable message.
+   */
   private stringifyCertbotError(error: any): string {
-    const message = error?.message || String(error);
-    const stderr = error?.stderr || "";
-    const stdout = error?.stdout || "";
-    const details = [stderr, stdout].filter(Boolean).join("\n");
-    return [message, details].filter(Boolean).join(" | ");
+    const message =
+      error?.message ||
+      String(error);
+
+    const stderr =
+      error?.stderr ||
+      "";
+
+    const stdout =
+      error?.stdout ||
+      "";
+
+    const details = [stderr, stdout]
+      .filter(Boolean)
+      .join("\n");
+
+    return [message, details]
+      .filter(Boolean)
+      .join(" | ");
   }
 
+  /**
+   * Optional Certbot config/work/log directories.
+   */
   private getCertbotDirArgs(): string[] {
     const args: string[] = [];
+
     if (env.certbotConfigDir) {
-      args.push("--config-dir", env.certbotConfigDir);
+      args.push(
+        "--config-dir",
+        env.certbotConfigDir
+      );
     }
+
     if (env.certbotWorkDir) {
-      args.push("--work-dir", env.certbotWorkDir);
+      args.push(
+        "--work-dir",
+        env.certbotWorkDir
+      );
     }
+
     if (env.certbotLogsDir) {
-      args.push("--logs-dir", env.certbotLogsDir);
+      args.push(
+        "--logs-dir",
+        env.certbotLogsDir
+      );
     }
+
     return args;
   }
 
+  /**
+   * Main SSL issuance flow.
+   *
+   * Flow:
+   *
+   * Domain
+   *   ↓
+   * DNS verification
+   *   ↓
+   * ACME webroot
+   *   ↓
+   * Certbot
+   *   ↓
+   * Nginx config
+   *   ↓
+   * nginx -t
+   *   ↓
+   * nginx reload
+   */
   public async issueCertificate(
     domainRecord: IDomain
   ): Promise<string[]> {
     if (!env.certbotEnabled) {
-      throw new Error("CERTBOT_ENABLED is not enabled in the environment.");
+      throw new Error(
+        "CERTBOT_ENABLED is not enabled in the environment."
+      );
     }
 
     if (!env.certbotEmail) {
-      throw new Error("CERTBOT_EMAIL must be set to request certificates.");
+      throw new Error(
+        "CERTBOT_EMAIL must be set to request certificates."
+      );
     }
 
-    let hosts = await this.getCertificateHosts(domainRecord);
-
-    // If nginx plugin mode is enabled, ensure we request both root and www forms
-    if (env.certbotUseNginx) {
-      const root = domainRecord.domain.toLowerCase();
-      hosts = Array.from(new Set([root, `www.${root}`, ...hosts]));
-    }
+    const hosts =
+      await this.getCertificateHosts(domainRecord);
 
     if (hosts.length === 0) {
       throw new Error(
@@ -119,181 +221,401 @@ class CertbotService {
       );
     }
 
-    await fs.ensureDir(env.certbotWebrootPath);
-
-    // Ensure an nginx HTTP site exists to serve the ACME challenge
-    try {
-      await this.ensureNginxHttpSite(domainRecord, hosts);
-      await this.testAndReloadNginx();
-    } catch (err: any) {
-      console.error("[Certbot] failed to prepare nginx for webroot challenges:", err);
-      // continue — certbot webroot will likely fail but surface a clearer error
-    }
-
-    const commandParts = this.parseCommand(env.certbotCommand);
-
-    // Support nginx plugin mode or fallback to webroot
     console.log(
-      `[Certbot] issuing certificate for ${hosts.join(", ")} using nginx=${env.certbotUseNginx}`
+      `[Certbot] requested hosts: ${hosts.join(", ")}`
     );
 
-    let nginxError: string | null = null;
-    let issued = false;
+    /**
+     * Make sure ACME webroot exists.
+     */
+    await fs.ensureDir(
+      env.certbotWebrootPath
+    );
 
-    if (env.certbotUseNginx) {
-      const args = [
-        "--nginx",
-        ...hosts.flatMap((h) => ["-d", h]),
-        "--non-interactive",
-        "--agree-tos",
-        "-m",
-        env.certbotEmail,
-        "--no-eff-email",
-        ...this.getCertbotDirArgs(),
-      ];
-
-      if (env.certbotUseStaging) args.push("--staging");
-
-      try {
-        await execa(commandParts[0], [...commandParts.slice(1), ...args], {
-          stdio: ["ignore", "pipe", "pipe"],
-          shell: false,
-        });
-        issued = true;
-      } catch (error: any) {
-        nginxError = this.stringifyCertbotError(error);
-        console.error("[Certbot] nginx issuance failed:", nginxError);
-      }
-    }
-
-    if (!issued) {
-      const args = [
-        "certonly",
-        "--webroot",
-        "--non-interactive",
-        "--agree-tos",
-        "--email",
-        env.certbotEmail,
-        "--no-eff-email",
-        "-w",
+    await fs.ensureDir(
+      path.join(
         env.certbotWebrootPath,
-        ...hosts.flatMap((host) => ["-d", host]),
-        ...this.getCertbotDirArgs(),
-      ];
+        ".well-known",
+        "acme-challenge"
+      )
+    );
 
-      if (env.certbotUseStaging) {
-        args.push("--staging");
-      }
+    /**
+     * Make sure temporary HTTP Nginx configuration exists.
+     *
+     * This is required before Certbot HTTP-01 validation.
+     */
+    try {
+      await this.ensureNginxHttpSite(
+        domainRecord,
+        hosts
+      );
 
-      try {
-        await execa(commandParts[0], [...commandParts.slice(1), ...args], {
-          stdio: ["ignore", "pipe", "pipe"],
-        });
-        issued = true;
-        // After successful webroot issuance, write HTTPS site config
-        try {
-          await this.ensureNginxSslSite(domainRecord, hosts);
-          await this.testAndReloadNginx();
-        } catch (err: any) {
-          console.error("[Certbot] warning: ssl site write/reload failed:", err);
-        }
-      } catch (error: any) {
-        const webrootError = this.stringifyCertbotError(error);
-        console.error("[Certbot] webroot issuance failed:", webrootError);
+      await this.testAndReloadNginx();
+    } catch (error: any) {
+      const message =
+        this.stringifyCertbotError(error);
 
-        if (nginxError && env.certbotUseNginx && env.certbotFallbackToWebroot) {
-          throw new Error(
-            `Nginx issuance failed: ${nginxError} | Webroot issuance failed: ${webrootError}`
-          );
-        }
+      console.error(
+        "[Certbot] Failed to prepare Nginx:",
+        message
+      );
 
-        throw error;
-      }
+      throw new Error(
+        `Unable to prepare Nginx for SSL challenge: ${message}`
+      );
     }
 
-    console.log("[Certbot] certificate issuance completed successfully");
+    /**
+     * Certbot command.
+     *
+     * Example env:
+     *
+     * CERTBOT_COMMAND="sudo -n /usr/bin/certbot"
+     */
+    const commandParts =
+      this.parseCommand(
+        env.certbotCommand
+      );
 
-    await this.reloadNginx();
+    if (commandParts.length === 0) {
+      throw new Error(
+        "CERTBOT_COMMAND is not configured."
+      );
+    }
+
+    console.log(
+      `[Certbot] issuing certificate for ${hosts.join(", ")}`
+    );
+
+    /**
+     * We use WEBROOT here because it works cleanly
+     * with our own Nginx configuration.
+     */
+    const args = [
+      "certonly",
+
+      "--webroot",
+
+      "--non-interactive",
+
+      "--agree-tos",
+
+      "--email",
+      env.certbotEmail,
+
+      "--no-eff-email",
+
+      "-w",
+      env.certbotWebrootPath,
+
+      ...hosts.flatMap((host) => [
+        "-d",
+        host,
+      ]),
+
+      ...this.getCertbotDirArgs(),
+    ];
+
+    if (env.certbotUseStaging) {
+      args.push("--staging");
+    }
+
+    let certbotOutput: any;
+
+    try {
+      certbotOutput = await execa(
+        commandParts[0],
+        [
+          ...commandParts.slice(1),
+          ...args,
+        ],
+        {
+          stdio: [
+            "ignore",
+            "pipe",
+            "pipe",
+          ],
+          shell: false,
+        }
+      );
+    } catch (error: any) {
+      const errorMessage =
+        this.stringifyCertbotError(error);
+
+      console.error(
+        "[Certbot] certificate issuance failed:",
+        errorMessage
+      );
+
+      throw new Error(
+        `Certbot SSL issuance failed: ${errorMessage}`
+      );
+    }
+
+    console.log(
+      "[Certbot] certificate created successfully."
+    );
+
+    if (certbotOutput?.stdout) {
+      console.log(
+        "[Certbot] stdout:",
+        certbotOutput.stdout
+      );
+    }
+
+    /**
+     * IMPORTANT:
+     *
+     * Certificate is now created.
+     *
+     * Automatically create the HTTPS Nginx config.
+     */
+    try {
+      await this.ensureNginxSslSite(
+        domainRecord,
+        hosts
+      );
+    } catch (error: any) {
+      const message =
+        this.stringifyCertbotError(error);
+
+      console.error(
+        "[Certbot] Failed to create SSL Nginx config:",
+        message
+      );
+
+      throw new Error(
+        `Certificate created, but Nginx SSL configuration failed: ${message}`
+      );
+    }
+
+    /**
+     * Test Nginx BEFORE reload.
+     */
+    try {
+      await this.testAndReloadNginx();
+    } catch (error: any) {
+      const message =
+        this.stringifyCertbotError(error);
+
+      console.error(
+        "[Certbot] Nginx validation/reload failed:",
+        message
+      );
+
+      throw new Error(
+        `Certificate created, but Nginx could not be reloaded: ${message}`
+      );
+    }
+
+    console.log(
+      `[Certbot] HTTPS successfully enabled for ${hosts.join(", ")}`
+    );
 
     return hosts;
   }
 
+  /**
+   * Backward compatibility.
+   */
   private async reloadNginx(): Promise<void> {
-    // kept for backward compatibility
     await this.testAndReloadNginx();
   }
 
+  /**
+   * Test Nginx configuration and reload only if test succeeds.
+   */
   private async testAndReloadNginx(): Promise<void> {
     if (!env.nginxTestCommand) {
-      throw new Error("NGINX test command is not configured");
+      throw new Error(
+        "NGINX test command is not configured."
+      );
     }
 
-    console.log("[Certbot] testing nginx configuration...");
+    console.log(
+      "[Certbot] testing nginx configuration..."
+    );
+
     try {
-      await execaCommand(env.nginxTestCommand, { shell: true });
-    } catch (err: any) {
-      const out = this.stringifyCertbotError(err);
-      console.error("[Certbot] nginx test failed:", out);
-      throw new Error(`nginx test failed: ${out}`);
+      await execaCommand(
+        env.nginxTestCommand,
+        {
+          shell: true,
+        }
+      );
+    } catch (error: any) {
+      const output =
+        this.stringifyCertbotError(error);
+
+      console.error(
+        "[Certbot] nginx test failed:",
+        output
+      );
+
+      throw new Error(
+        `nginx test failed: ${output}`
+      );
     }
 
     if (!env.nginxReloadCommand) {
-      console.log("[Certbot] nginx reload command not configured; skipping reload");
-      return;
+      throw new Error(
+        "NGINX reload command is not configured."
+      );
     }
 
-    console.log("[Certbot] reloading nginx...");
+    console.log(
+      "[Certbot] reloading nginx..."
+    );
+
     try {
-      await execaCommand(env.nginxReloadCommand, { shell: true });
-    } catch (err: any) {
-      const out = this.stringifyCertbotError(err);
-      console.error("[Certbot] nginx reload failed:", out);
-      throw new Error(`nginx reload failed: ${out}`);
+      await execaCommand(
+        env.nginxReloadCommand,
+        {
+          shell: true,
+        }
+      );
+    } catch (error: any) {
+      const output =
+        this.stringifyCertbotError(error);
+
+      console.error(
+        "[Certbot] nginx reload failed:",
+        output
+      );
+
+      throw new Error(
+        `nginx reload failed: ${output}`
+      );
     }
+
+    console.log(
+      "[Certbot] nginx reloaded successfully."
+    );
   }
 
-  private async writeFileAsRoot(tempPath: string, destPath: string, content: string): Promise<void> {
-    // write locally to tempPath then move to destPath using sudo so root owns the file
-    await fs.writeFile(tempPath, content, { encoding: "utf8" });
+  /**
+   * Write a file using sudo.
+   *
+   * Backend user writes temporary file,
+   * then sudo moves it into /etc/nginx.
+   */
+  private async writeFileAsRoot(
+    tempPath: string,
+    destPath: string,
+    content: string
+  ): Promise<void> {
+    await fs.ensureDir(
+      path.dirname(tempPath)
+    );
 
-    // move into place with sudo and set ownership
+    await fs.writeFile(
+      tempPath,
+      content,
+      {
+        encoding: "utf8",
+      }
+    );
+
     try {
-      await execaCommand(`sudo -n mv ${tempPath} ${destPath}`, { shell: true });
-      await execaCommand(`sudo -n chown root:root ${destPath}`, { shell: true });
-      await execaCommand(`sudo -n chmod 644 ${destPath}`, { shell: true });
-    } catch (err: any) {
-      // cleanup and rethrow
+      await execaCommand(
+        `sudo -n mv "${tempPath}" "${destPath}"`,
+        {
+          shell: true,
+        }
+      );
+
+      await execaCommand(
+        `sudo -n chown root:root "${destPath}"`,
+        {
+          shell: true,
+        }
+      );
+
+      await execaCommand(
+        `sudo -n chmod 644 "${destPath}"`,
+        {
+          shell: true,
+        }
+      );
+    } catch (error) {
       try {
         await fs.remove(tempPath);
-      } catch {}
-      throw err;
+      } catch {
+        // Ignore cleanup error.
+      }
+
+      throw error;
     }
   }
 
-  private async ensureNginxHttpSite(domainRecord: IDomain, hosts: string[]): Promise<void> {
-    const primary = hosts[0];
-    const filename = `${primary}.conf`;
-    const sitesAvailable = env.nginxSitesAvailablePath;
-    const sitesEnabled = env.nginxSitesEnabledPath;
-    const destPath = path.join(sitesAvailable, filename);
-    const enabledPath = path.join(sitesEnabled, filename);
+  /**
+   * Create HTTP Nginx site.
+   *
+   * This configuration is used for:
+   *
+   * /.well-known/acme-challenge/
+   *
+   * and during certificate issuance.
+   */
+  private async ensureNginxHttpSite(
+    domainRecord: IDomain,
+    hosts: string[]
+  ): Promise<void> {
+    const primary =
+      hosts[0];
 
-    const serverNames = hosts.join(" ");
+    const filename =
+      `${primary}.conf`;
 
-    const conf = `server {
+    const sitesAvailable =
+      env.nginxSitesAvailablePath;
+
+    const sitesEnabled =
+      env.nginxSitesEnabledPath;
+
+    const destPath =
+      path.join(
+        sitesAvailable,
+        filename
+      );
+
+    const enabledPath =
+      path.join(
+        sitesEnabled,
+        filename
+      );
+
+    const serverNames =
+      hosts.join(" ");
+
+    const challengePath =
+      path.join(
+        env.certbotWebrootPath,
+        ".well-known",
+        "acme-challenge"
+      );
+
+    const conf = `
+server {
     listen 80;
+    listen [::]:80;
+
     server_name ${serverNames};
 
-    root ${env.certbotWebrootPath};
+    client_max_body_size 100M;
 
-    location /.well-known/acme-challenge/ {
-        alias ${path.join(env.certbotWebrootPath, ".well-known/acme-challenge")}/;
+    location ^~ /.well-known/acme-challenge/ {
+        root ${env.certbotWebrootPath};
+        default_type text/plain;
         try_files $uri =404;
     }
 
     location / {
         proxy_pass http://127.0.0.1:${env.port};
+
         proxy_http_version 1.1;
+
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -304,49 +626,142 @@ class CertbotService {
 }
 `;
 
-    await fs.ensureDir(path.dirname(destPath));
-    const tmp = path.join(env.certbotWebrootPath, `${filename}.tmp`);
-    await this.writeFileAsRoot(tmp, destPath, conf);
+    await fs.ensureDir(
+      sitesAvailable
+    );
 
-    // create symlink in sites-enabled if missing (use sudo)
-    try {
-      const exists = await execaCommand(`test -L ${enabledPath} || echo missing`, { shell: true });
-      // create or replace symlink
-      await execaCommand(`sudo -n ln -sf ${destPath} ${enabledPath}`, { shell: true });
-    } catch (err) {
-      console.error("[Certbot] failed to create symlink for nginx site:", err);
-    }
+    await fs.ensureDir(
+      sitesEnabled
+    );
+
+    await fs.ensureDir(
+      challengePath
+    );
+
+    const tmp =
+      path.join(
+        env.certbotWebrootPath,
+        `${filename}.tmp`
+      );
+
+    await this.writeFileAsRoot(
+      tmp,
+      destPath,
+      conf
+    );
+
+    /**
+     * Enable site automatically.
+     */
+    await execaCommand(
+      `sudo -n ln -sf "${destPath}" "${enabledPath}"`,
+      {
+        shell: true,
+      }
+    );
+
+    console.log(
+      `[Certbot] HTTP Nginx site enabled: ${filename}`
+    );
   }
 
-  private async ensureNginxSslSite(domainRecord: IDomain, hosts: string[]): Promise<void> {
-    const primary = hosts[0];
-    const filename = `${primary}.conf`;
-    const sitesAvailable = env.nginxSitesAvailablePath;
-    const sitesEnabled = env.nginxSitesEnabledPath;
-    const destPath = path.join(sitesAvailable, filename);
-    const enabledPath = path.join(sitesEnabled, filename);
+  /**
+   * Create HTTPS Nginx configuration.
+   *
+   * This is called automatically AFTER Certbot succeeds.
+   */
+  private async ensureNginxSslSite(
+    domainRecord: IDomain,
+    hosts: string[]
+  ): Promise<void> {
+    const primary =
+      hosts[0];
 
-    const serverNames = hosts.join(" ");
+    const filename =
+      `${primary}.conf`;
 
-    const certPath = `/etc/letsencrypt/live/${primary}/fullchain.pem`;
-    const keyPath = `/etc/letsencrypt/live/${primary}/privkey.pem`;
+    const sitesAvailable =
+      env.nginxSitesAvailablePath;
 
-    const conf = `server {
+    const sitesEnabled =
+      env.nginxSitesEnabledPath;
+
+    const destPath =
+      path.join(
+        sitesAvailable,
+        filename
+      );
+
+    const enabledPath =
+      path.join(
+        sitesEnabled,
+        filename
+      );
+
+    const serverNames =
+      hosts.join(" ");
+
+    /**
+     * Certbot creates:
+     *
+     * /etc/letsencrypt/live/domain/fullchain.pem
+     * /etc/letsencrypt/live/domain/privkey.pem
+     */
+    const certPath =
+      `/etc/letsencrypt/live/${primary}/fullchain.pem`;
+
+    const keyPath =
+      `/etc/letsencrypt/live/${primary}/privkey.pem`;
+
+    /**
+     * HTTP:
+     *
+     * Keep ACME challenge available.
+     * Everything else redirects to HTTPS.
+     *
+     * HTTPS:
+     *
+     * Serve certificate and proxy to backend.
+     */
+    const conf = `
+server {
     listen 80;
+    listen [::]:80;
+
     server_name ${serverNames};
-    return 301 https://$host$request_uri;
+
+    client_max_body_size 100M;
+
+    location ^~ /.well-known/acme-challenge/ {
+        root ${env.certbotWebrootPath};
+        default_type text/plain;
+        try_files $uri =404;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
 }
 
 server {
-    listen 443 ssl http2;
+    listen 443 ssl;
+    listen [::]:443 ssl;
+
     server_name ${serverNames};
+
+    client_max_body_size 100M;
 
     ssl_certificate ${certPath};
     ssl_certificate_key ${keyPath};
 
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
     location / {
         proxy_pass http://127.0.0.1:${env.port};
+
         proxy_http_version 1.1;
+
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -357,15 +772,47 @@ server {
 }
 `;
 
-    await fs.ensureDir(path.dirname(destPath));
-    const tmp = path.join(env.certbotWebrootPath, `${filename}.tmp`);
-    await this.writeFileAsRoot(tmp, destPath, conf);
+    await fs.ensureDir(
+      sitesAvailable
+    );
 
-    try {
-      await execaCommand(`sudo -n ln -sf ${destPath} ${enabledPath}`, { shell: true });
-    } catch (err) {
-      console.error("[Certbot] failed to create symlink for ssl nginx site:", err);
-    }
+    await fs.ensureDir(
+      sitesEnabled
+    );
+
+    const tmp =
+      path.join(
+        env.certbotWebrootPath,
+        `${filename}.tmp`
+      );
+
+    await this.writeFileAsRoot(
+      tmp,
+      destPath,
+      conf
+    );
+
+    /**
+     * Automatically enable Nginx site.
+     */
+    await execaCommand(
+      `sudo -n ln -sf "${destPath}" "${enabledPath}"`,
+      {
+        shell: true,
+      }
+    );
+
+    console.log(
+      `[Certbot] HTTPS Nginx site enabled: ${filename}`
+    );
+
+    console.log(
+      `[Certbot] certificate: ${certPath}`
+    );
+
+    console.log(
+      `[Certbot] private key: ${keyPath}`
+    );
   }
 }
 
