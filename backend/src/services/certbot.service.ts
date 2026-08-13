@@ -550,6 +550,39 @@ class CertbotService {
   }
 
   /**
+   * Remove any stale nginx config for the same hostnames before ACME validation.
+   *
+   * This prevents nginx -t from failing on a missing certificate that belongs to
+   * an older or incomplete SSL config.
+   */
+  private async removeConflictingNginxSiteConfigs(
+    hosts: string[]
+  ): Promise<void> {
+    const siteNames = new Set(
+      hosts.map((host) =>
+        host.toLowerCase().replace(/\.$/, "")
+      )
+    );
+
+    for (const host of siteNames) {
+      const availablePath = path.join(
+        env.nginxSitesAvailablePath,
+        `${host}.conf`
+      );
+
+      const enabledPath = path.join(
+        env.nginxSitesEnabledPath,
+        `${host}.conf`
+      );
+
+      await Promise.allSettled([
+        fs.remove(availablePath),
+        fs.remove(enabledPath),
+      ]);
+    }
+  }
+
+  /**
    * Create HTTP Nginx site.
    *
    * This configuration is used for:
@@ -633,6 +666,8 @@ server {
     await fs.ensureDir(
       sitesEnabled
     );
+
+    await this.removeConflictingNginxSiteConfigs(hosts);
 
     await fs.ensureDir(
       challengePath
