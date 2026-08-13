@@ -575,10 +575,18 @@ class CertbotService {
         `${host}.conf`
       );
 
-      await Promise.allSettled([
-        fs.remove(availablePath),
-        fs.remove(enabledPath),
-      ]);
+      for (const configPath of [availablePath, enabledPath]) {
+        try {
+          await execaCommand(
+            `sudo -n rm -f "${configPath}"`,
+            {
+              shell: true,
+            }
+          );
+        } catch {
+          // Ignore cleanup errors. The goal is to remove stale host config safely.
+        }
+      }
     }
   }
 
