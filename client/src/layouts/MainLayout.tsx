@@ -40,8 +40,8 @@ const MainLayout = () => {
     <>
       {user ? <Sidebar /> : <Navbar />}
 
-      <div className={`${user ? "ml-72" : ""}`}>
-        <main className={`app-main`}>
+      <div className={user ? "lg:ml-72" : ""}>
+        <main className="app-main">
           <Outlet />
         </main>
 
