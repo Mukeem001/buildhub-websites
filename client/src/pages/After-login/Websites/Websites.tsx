@@ -348,7 +348,7 @@ const WebsiteCard = ({
   };
 
   const handleManage = () => {
-    navigate(`/settings?site=${website.id}&slug=${encodeURIComponent(website.slug || "")}`);
+    navigate(`/websites/${website.id}/edit`);
   };
 
   const handleAnalytics = () => {

@@ -28,6 +28,7 @@ import Profile from "./pages/After-login/Profile/Profile";
 
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Domain from "./pages/After-login/Domain/Domain";
+import WebsiteEditor from "./pages/After-login/Websites/WebsiteEditor";
 
 const HomeRoute = () => {
   const { user } = useAuth();
@@ -77,6 +78,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Websites />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="websites/:id/edit"
+            element={
+              <ProtectedRoute>
+                <WebsiteEditor />
               </ProtectedRoute>
             }
           />
