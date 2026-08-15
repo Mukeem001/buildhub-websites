@@ -25,7 +25,7 @@ type WebsiteStatus = "Live" | "Building" | "Draft";
 const initialProjects: Project[] = [];
 
 interface Website {
-  id: number;
+  id: string;
   name: string;
   slug?: string;
   category?: string;
@@ -266,7 +266,7 @@ const Websites: React.FC = () => {
                   <WebsiteCard
                     key={website.id}
                     website={{
-                      id: Number(website.id),
+                      id: String(website.id),
                       name: website.name,
                       category: website.templateName || "",
                       status: website.status === "live" ? "Live" : website.status === "building" ? "Building" : "Draft",
