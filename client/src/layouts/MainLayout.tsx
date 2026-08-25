@@ -1,4 +1,4 @@
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
@@ -9,7 +9,9 @@ import { API_URL } from "../services/api.config";
 
 const MainLayout = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
+  const isEditorPage = /^\/websites\/[^/]+\/edit$/.test(location.pathname);
 
   useEffect(() => {
     const currentUser = getCurrentUser();
@@ -38,14 +40,14 @@ const MainLayout = () => {
 
   return (
     <>
-      {user ? <Sidebar /> : <Navbar />}
+      {!isEditorPage && (user ? <Sidebar /> : <Navbar />)}
 
-      <div className={user ? "lg:ml-72" : ""}>
-        <main className="app-main">
+      <div className={user && !isEditorPage ? "lg:ml-72" : ""}>
+        <main className="">
           <Outlet />
         </main>
 
-        <Footer />
+        {!isEditorPage && <Footer />}
       </div>
     </>
   );

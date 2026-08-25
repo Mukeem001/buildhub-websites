@@ -44,6 +44,11 @@ const links = [
         path: "/DashboardTemplates",
         icon: FaClone,
     },
+    {
+        name: "System Templates",
+        path: "/system-templates",
+        icon: FaClone,
+    },
      {
             name: "Domain",
             path: "/domain",

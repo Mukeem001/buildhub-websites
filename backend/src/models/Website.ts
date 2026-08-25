@@ -17,6 +17,16 @@ export interface IWebsite extends Document {
 
   templateVersion: string;
 
+  sourceProjectPath: string;
+
+  draftVersion: string;
+
+  publishedVersion: string;
+
+  draftStatus: "clean" | "modified" | "building" | "failed";
+
+  lastBuildError?: string;
+
   isPublished: boolean;
 
   visitors: number;
@@ -95,6 +105,33 @@ const WebsiteSchema = new Schema<IWebsite>(
     templateVersion: {
       type: String,
       default: "1.0.0",
+    },
+
+    sourceProjectPath: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    draftVersion: {
+      type: String,
+      default: "draft-1",
+    },
+
+    publishedVersion: {
+      type: String,
+      default: "",
+    },
+
+    draftStatus: {
+      type: String,
+      enum: ["clean", "modified", "building", "failed"],
+      default: "clean",
+    },
+
+    lastBuildError: {
+      type: String,
+      default: "",
     },
 
     isPublished: {

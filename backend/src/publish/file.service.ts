@@ -3,6 +3,7 @@ import path from "path";
 
 import {
   TEMPLATES_DIR,
+  PROJECTS_DIR,
   PUBLISHED_DIR,
 } from "../config/paths";
 
@@ -43,6 +44,11 @@ export const getPublishedPath = (
     websiteSlug
   );
 };
+
+export const getProjectPath = (
+  userId: string,
+  websiteId: string
+) => path.join(PROJECTS_DIR, userId, websiteId);
 
 /* ==========================
    Check Template Exists
@@ -85,6 +91,27 @@ export const copyTemplate = async (
     getPublishedPath(websiteSlug);
 
   await fs.copy(source, destination);
+
+  return destination;
+};
+
+export const copyTemplateToProject = async (
+  templateSlug: string,
+  userId: string,
+  websiteId: string
+) => {
+  const source = getTemplatePath(templateSlug);
+  const destination = getProjectPath(userId, websiteId);
+
+  await fs.ensureDir(path.dirname(destination));
+  await fs.copy(source, destination, {
+    overwrite: false,
+    errorOnExist: false,
+    filter: (entry) => {
+      const relative = path.relative(source, entry);
+      return !relative.split(path.sep).some((part) => ["node_modules", "dist", ".git"].includes(part));
+    },
+  });
 
   return destination;
 };

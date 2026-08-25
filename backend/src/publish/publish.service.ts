@@ -9,9 +9,10 @@ import WebsitePage from "../models/WebsitePage";
 import {
   templateExists,
   deletePublishedWebsite,
-  copyTemplate,
+  copyTemplateToProject,
   writeJson,
 } from "./file.service";
+import { PUBLISHED_DIR } from "../config/paths";
 
 import { installAndBuild } from "./vite-builder";
 
@@ -71,31 +72,6 @@ const writeRuntimeConfig = async (projectPath: string, website: any) => {
   }
 };
 
-const cleanupPublishedBuild = async (projectPath: string) => {
-  const pathsToRemove = [
-    "dist",
-    "src",
-    "public",
-    "node_modules",
-    "package.json",
-    "package-lock.json",
-    "vite.config.ts",
-    "vite.config.js",
-    "tsconfig.json",
-    "tsconfig.app.json",
-    "tsconfig.node.json",
-    "README.md",
-  ];
-
-  for (const relativePath of pathsToRemove) {
-    const absolutePath = path.join(projectPath, relativePath);
-
-    if (await fs.pathExists(absolutePath)) {
-      await fs.remove(absolutePath);
-    }
-  }
-};
-
 export const publishWebsite = async (
   websiteId: string
 ) => {
@@ -113,12 +89,26 @@ export const publishWebsite = async (
      Check Template
   ========================= */
 
-  const exists = await templateExists(
-    website.templateSlug
-  );
+  let sourceProjectPath = website.sourceProjectPath;
 
-  if (!exists) {
-    throw new Error("Template not found");
+  if (!sourceProjectPath || sourceProjectPath === "pending") {
+    const templateAvailable = await templateExists(website.templateSlug);
+
+    if (!templateAvailable) {
+      throw new Error("Template not found");
+    }
+
+    sourceProjectPath = await copyTemplateToProject(
+      website.templateSlug,
+      String(website.userId),
+      String(website._id)
+    );
+    website.sourceProjectPath = sourceProjectPath;
+    await website.save();
+  }
+
+  if (!(await fs.pathExists(sourceProjectPath))) {
+    throw new Error("Website source project not found");
   }
 
   /* =========================
@@ -151,11 +141,10 @@ export const publishWebsite = async (
      Copy Template
   ========================= */
 
-  const projectPath =
-    await copyTemplate(
-      website.templateSlug,
-      website.slug
-    );
+  const projectPath = path.join(PUBLISHED_DIR, website.slug);
+
+  await fs.ensureDir(path.dirname(projectPath));
+  await fs.copy(sourceProjectPath, projectPath, { overwrite: true });
 
   /* =========================
      Generate Website Data
@@ -197,13 +186,7 @@ export const publishWebsite = async (
     );
   }
 
-  await fs.copy(distDir, projectPath, {
-    overwrite: true,
-  });
-
-  await cleanupPublishedBuild(projectPath);
-
-  const publishedIndex = path.join(projectPath, "index.html");
+  const publishedIndex = path.join(distDir, "index.html");
 
   if (!(await fs.pathExists(publishedIndex))) {
     throw new Error(

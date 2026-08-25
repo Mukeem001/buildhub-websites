@@ -43,18 +43,16 @@ export const renderWebsite = (
       requestPath = "/index.html";
     }
 
-    const filePath = path.join(
-      websiteRoot,
-      requestPath
-    );
+    const distRoot = fs.existsSync(path.join(websiteRoot, "dist"))
+      ? path.join(websiteRoot, "dist")
+      : websiteRoot;
+    const filePath = path.join(distRoot, requestPath);
 
     if (fs.existsSync(filePath)) {
       return res.sendFile(filePath);
     }
 
-    return res.sendFile(
-      path.join(websiteRoot, "index.html")
-    );
+    return res.sendFile(path.join(distRoot, "index.html"));
   } catch (error: any) {
     console.error(error);
 

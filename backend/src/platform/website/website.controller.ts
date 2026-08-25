@@ -118,6 +118,36 @@ export const getWebsiteDashboard = async (req: Request, res: Response) => {
   }
 };
 
+export const getWebsiteEditor = async (req: Request, res: Response) => {
+  try {
+    const websiteId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const editor = await WebsiteService.getWebsiteEditor(websiteId);
+
+    if (!editor) {
+      return res.status(404).json({ success: false, message: "Website not found" });
+    }
+
+    return res.json({ success: true, data: editor });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const saveWebsiteDraft = async (req: Request, res: Response) => {
+  try {
+    const websiteId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const result = await WebsiteService.saveWebsiteDraft(websiteId, req.body);
+
+    if (!result) {
+      return res.status(404).json({ success: false, message: "Website not found" });
+    }
+
+    return res.json({ success: true, message: "Draft saved successfully", data: result });
+  } catch (error: any) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+};
+
 export const updateWebsiteSettings = async (req: Request, res: Response) => {
   try {
     const websiteId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;

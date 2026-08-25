@@ -178,3 +178,115 @@ export const deleteProject = (id: string) => {
     JSON.stringify(updated)
   );
 };
+
+export interface WebsiteEditorPage {
+  id: string;
+  title: string;
+  slug: string;
+  type: "system" | "custom";
+  sourceFile: string | null;
+  sections: unknown[];
+  seo?: {
+    title?: string;
+    description?: string;
+    keywords?: string[];
+  };
+  isHomePage: boolean;
+  sortOrder: number;
+}
+
+export interface WebsiteEditorData {
+  website: Project & { websiteId?: string; websiteSlug?: string };
+  editor: {
+    draftVersion: string;
+    publishedVersion: string;
+    draftStatus: "clean" | "modified" | "building" | "failed";
+    lastBuildError: string;
+    previewUrl: string;
+  };
+  pages: WebsiteEditorPage[];
+  sourceFiles: string[];
+}
+
+export const fetchWebsiteEditor = async (
+  websiteId: string
+): Promise<WebsiteEditorData> => {
+  const user = getCurrentUser();
+
+  if (!user?.token) {
+    throw new Error("Please log in before opening the editor.");
+  }
+
+  const response = await fetch(`${API_URL}/websites/${websiteId}/editor`, {
+    headers: {
+      Authorization: `Bearer ${user.token}`,
+    },
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    if (response.status === 403) {
+      invalidateSession(data?.message || "Session expired");
+    }
+    throw new Error(data?.message || "Failed to load website editor");
+  }
+
+  return data.data;
+};
+
+export const saveWebsiteEditorDraft = async (
+  websiteId: string,
+  pages: Array<{
+    id: string;
+    title: string;
+    slug: string;
+    sections: unknown[];
+    seo?: { title?: string; description?: string; keywords?: string[] };
+    sortOrder: number;
+  }>
+) => {
+  const user = getCurrentUser();
+
+  if (!user?.token) {
+    throw new Error("Please log in before saving the draft.");
+  }
+
+  const response = await fetch(`${API_URL}/websites/${websiteId}/editor/draft`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${user.token}`,
+    },
+    body: JSON.stringify({ pages }),
+  });
+
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(data?.message || "Failed to save draft");
+  }
+
+  return data.data as { draftVersion: string; draftStatus: string };
+};
+
+export const publishWebsite = async (websiteId: string) => {
+  const user = getCurrentUser();
+
+  if (!user?.token) {
+    throw new Error("Please log in before publishing the website.");
+  }
+
+  const response = await fetch(`${API_URL}/publish/${websiteId}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${user.token}`,
+    },
+  });
+
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(data?.message || "Failed to publish website");
+  }
+
+  return data.data;
+};

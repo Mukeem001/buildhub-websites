@@ -1,4 +1,6 @@
 import { Types } from "mongoose";
+import fs from "fs-extra";
+import path from "path";
 
 import Website from "../../models/Website";
 import WebsiteSettings from "../../models/WebsiteSettings";
@@ -6,6 +8,7 @@ import WebsiteTheme from "../../models/WebsiteTheme";
 import WebsitePage from "../../models/WebsitePage";
 
 import { getTemplateById } from "../../templates";
+import { copyTemplateToProject } from "../../publish/file.service";
 import { publishWebsite as publishWebsiteService } from "../../publish/publish.service";
 
 interface CreateWebsiteData {
@@ -110,6 +113,10 @@ export const createWebsite = async ({
     subdomain: subdomain || "",
     customDomain: customDomain || "",
     templateVersion: template.version,
+    sourceProjectPath: "pending",
+    draftVersion: "draft-1",
+    publishedVersion: "",
+    draftStatus: "clean",
   });
 
   const websiteId = website._id as Types.ObjectId;
@@ -143,6 +150,13 @@ export const createWebsite = async ({
 
     sortOrder++;
   }
+
+  website.sourceProjectPath = await copyTemplateToProject(
+    resolvedTemplateSlug,
+    userId,
+    String(websiteId)
+  );
+  await website.save();
 
   const moduleBindings = buildModuleBindings(website);
 
@@ -238,6 +252,105 @@ export const getWebsiteDashboard = async (websiteId: string) => {
     settings,
     theme,
     pages,
+  };
+};
+
+export const getWebsiteEditor = async (websiteId: string) => {
+  const objectId = new Types.ObjectId(websiteId);
+  const website = await Website.findById(objectId);
+
+  if (!website) return null;
+
+  const pages = await WebsitePage.find({ websiteId: objectId }).sort({ sortOrder: 1 });
+  const sourceRoot = website.sourceProjectPath;
+
+  const sourceFiles: string[] = [];
+  const scan = async (directory: string, relative = "") => {
+    if (!(await fs.pathExists(directory))) return;
+    const entries = await fs.readdir(directory, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const entryRelative = path.join(relative, entry.name);
+      const absolute = path.join(directory, entry.name);
+
+      if (entry.isDirectory() && !["node_modules", "dist", ".git"].includes(entry.name)) {
+        await scan(absolute, entryRelative);
+      } else if (entry.isFile() && /\.(tsx?|jsx?)$/.test(entry.name)) {
+        sourceFiles.push(entryRelative.replace(/\\/g, "/"));
+      }
+    }
+  };
+
+  await scan(path.join(sourceRoot, "src"));
+
+  return {
+    website: buildModuleBindings(website),
+    editor: {
+      draftVersion: website.draftVersion,
+      publishedVersion: website.publishedVersion,
+      draftStatus: website.draftStatus,
+      lastBuildError: website.lastBuildError || "",
+      previewUrl: `/sites/${website.slug}`,
+    },
+    pages: pages.map((page: any) => ({
+      id: String(page._id),
+      title: page.title,
+      slug: page.slug,
+      type: page.type,
+      sourceFile: sourceFiles.find((file) => {
+        const fileName = path.basename(file).replace(/\.(tsx?|jsx?)$/, "").toLowerCase();
+        return fileName === page.title.toLowerCase() || fileName === page.slug.toLowerCase();
+      }) || null,
+      sections: page.sections || [],
+      seo: page.seo,
+      isHomePage: page.isHomePage,
+      sortOrder: page.sortOrder,
+    })),
+    sourceFiles,
+  };
+};
+
+export const saveWebsiteDraft = async (
+  websiteId: string,
+  payload: {
+    pages?: Array<{
+      id: string;
+      title?: string;
+      slug?: string;
+      sections?: unknown[];
+      seo?: { title?: string; description?: string; keywords?: string[] };
+      sortOrder?: number;
+    }>;
+  }
+) => {
+  const website = await Website.findById(websiteId);
+  if (!website) return null;
+
+  for (const pagePayload of payload.pages || []) {
+    const page = await WebsitePage.findOne({
+      _id: pagePayload.id,
+      websiteId: website._id,
+    });
+
+    if (!page) continue;
+
+    if (pagePayload.title !== undefined) page.title = pagePayload.title;
+    if (pagePayload.slug !== undefined) page.slug = pagePayload.slug;
+    if (pagePayload.sections !== undefined) page.sections = pagePayload.sections;
+    if (pagePayload.seo !== undefined) page.seo = pagePayload.seo as any;
+    if (pagePayload.sortOrder !== undefined) page.sortOrder = pagePayload.sortOrder;
+    await page.save();
+  }
+
+  const currentVersion = Number.parseInt(website.draftVersion.replace("draft-", ""), 10) || 1;
+  website.draftVersion = `draft-${currentVersion + 1}`;
+  website.draftStatus = "modified";
+  website.lastBuildError = "";
+  await website.save();
+
+  return {
+    draftVersion: website.draftVersion,
+    draftStatus: website.draftStatus,
   };
 };
 

@@ -20,6 +20,7 @@ import ForgotPassword from "./pages/Without-login/Auth/ForgotPassword/ForgotPass
 import Dashboard from "./pages/After-login/Dashboard/Dashboard";
 import Websites from "./pages/After-login/Websites/Websites";
 import DashboardTemplates from "./pages/After-login/Templates/Templates";
+import SystemTemplates from "./pages/After-login/SystemTemplates/SystemTemplates";
 import Analytics from "./pages/After-login/Analytics/Analytics";
 import Billing from "./pages/After-login/Billing/Billing";
 import Settings from "./pages/After-login/Settings/Settings";
@@ -70,6 +71,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <DashboardTemplates />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="system-templates"
+            element={
+              <ProtectedRoute>
+                <SystemTemplates />
               </ProtectedRoute>
             }
           />
