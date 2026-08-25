@@ -31,10 +31,14 @@ router.use("/:slug", (req, res) => {
     });
   }
 
-  let requestPath = req.path.replace(
-    `/${slug}`,
-    ""
-  );
+  const slugPrefix = `/${slug}`;
+  let requestPath = req.path.startsWith(slugPrefix)
+    ? req.path.slice(slugPrefix.length)
+    : req.path;
+
+  if (!requestPath.startsWith("/")) {
+    requestPath = `/${requestPath}`;
+  }
 
   if (
     requestPath === "" ||
@@ -63,9 +67,25 @@ router.use("/:slug", (req, res) => {
     ? path.join(websiteRoot, "dist")
     : websiteRoot;
   const filePath = path.join(distRoot, requestPath);
+  const resolvedRoot = path.resolve(distRoot);
+  const resolvedFile = path.resolve(filePath);
+
+  if (resolvedFile !== resolvedRoot && !resolvedFile.startsWith(`${resolvedRoot}${path.sep}`)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid published asset path",
+    });
+  }
 
   if (fs.existsSync(filePath)) {
     return res.sendFile(filePath);
+  }
+
+  if (path.extname(requestPath)) {
+    return res.status(404).json({
+      success: false,
+      message: "Published asset not found",
+    });
   }
 
   return res.sendFile(path.join(distRoot, "index.html"));
