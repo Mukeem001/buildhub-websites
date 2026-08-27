@@ -186,6 +186,19 @@ export const publishWebsite = async (
     );
   }
 
+  // Keep the published root compatible with Nginx configurations that alias
+  // /sites/ directly to the website folder instead of its dist subfolder.
+  const builtEntries = await fs.readdir(distDir);
+  await Promise.all(
+    builtEntries.map((entry) =>
+      fs.copy(
+        path.join(distDir, entry),
+        path.join(projectPath, entry),
+        { overwrite: true }
+      )
+    )
+  );
+
   const publishedIndex = path.join(distDir, "index.html");
 
   if (!(await fs.pathExists(publishedIndex))) {
