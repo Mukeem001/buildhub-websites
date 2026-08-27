@@ -43,10 +43,16 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
+    # Let Express resolve the website slug and its dist directory. Do not use
+    # an Nginx alias here because the backend publish root may be configured
+    # differently from the Nginx machine path.
     location /sites/ {
-        alias /var/www/buildhub-websites/published/;
-        index index.html;
-        try_files $uri $uri/ $uri/index.html =404;
+        proxy_pass http://127.0.0.1:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
 
     location / {
