@@ -222,7 +222,7 @@ const WebsiteEditor = () => {
   const [draggedBlockId, setDraggedBlockId] = useState<string | null>(null);
   const [resizeState, setResizeState] = useState<{ id: string; startX: number; startY: number; startWidth: string; startHeight: string } | null>(null);
   const [leftPanelTab, setLeftPanelTab] = useState<"blocks" | "pages" | "settings">("blocks");
-  const [previewMode, setPreviewMode] = useState(true);
+  const [previewMode, setPreviewMode] = useState(false);
   const blocksCanvasRef = useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
@@ -1852,6 +1852,11 @@ const WebsiteEditor = () => {
                             <img
                               src={currentFooter.logoUrl}
                               alt="Footer logo"
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                selectBlock(FOOTER_BLOCK_ID);
+                              }}
                               style={{
                                 position: "relative",
                                 left: currentFooter.logoX ?? 0,
@@ -1983,6 +1988,11 @@ const WebsiteEditor = () => {
                             src={currentNavbar.logoUrl}
                             alt="Brand logo"
                             draggable
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                selectBlock(NAVBAR_BLOCK_ID);
+                              }}
                             onDragStart={(event) => {
                               event.dataTransfer.setData("application/logo-scope", "navbar");
                             }}
